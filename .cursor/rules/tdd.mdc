@@ -1,3 +1,8 @@
+---
+description: tdd rules
+globs: 
+alwaysApply: false
+---
 # テスト駆動開発 (TDD) の基本
 
 ## 基本概念
@@ -22,16 +27,13 @@
 
 テストが通った後のリファクタリングフェーズでは、以下のツールを活用します：
 
-1. **静的解析・型チェック**:
-   - `deno check <target>`
-   - `deno lint <target>`
+1. 静的解析・型チェック（ruffで統一）
+`ruff check <target>  # 静的解析とリンティング`
+`ruff format <target>  # コードフォーマット`
 
-2. **デッドコード検出・削除 (TSR)**:
-   - `deno run -A npm:tsr 'mod\.ts$'`
-
-3. **コードカバレッジ測定**:
-   - `deno test --coverage=coverage <test_file>`
-   - `deno coverage coverage`
+2. テストとカバレッジ（pytest）
+`pytest tests/  # テスト実行`
+`pytest --cov=src tests/  # カバレッジ付きでテスト実行`
 
 4. **Gitによるバージョン管理**:
    - 各フェーズ（テスト作成→実装→リファクタリング）の完了時にコミット
@@ -47,11 +49,5 @@
      - `refactor:` - リファクタリング
 
 ## 詳細情報
-
-Deno環境におけるTDDの詳細な実践方法、例、各種ツールの活用方法については、以下のファイルを参照してください：
-
-```
-.cline/roomodes/deno-tdd.md
-```
 
 このファイルにはテストファーストモードの詳細な手順、テストの命名規約、リファクタリングのベストプラクティスなどが含まれています。

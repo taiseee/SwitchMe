@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## ディレクトリ配置規則
+
+```
+.cursor          # cursorプロンプト
+docs/            # ドキュメント置き場
+apps/*           # アプリケーション
+```

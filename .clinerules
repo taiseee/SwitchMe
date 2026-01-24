@@ -46,12 +46,7 @@
 
 ### 型定義
 
-```typescript
-// ブランデッド型で型安全性を確保
-type Branded<T, B> = T & { _brand: B };
-type Money = Branded<number, "Money">;
-type Email = Branded<string, "Email">;
-```
+pydanticを利用
 
 ### 値オブジェクト
 
@@ -60,14 +55,6 @@ type Email = Branded<string, "Email">;
 - 自己検証
 - ドメイン操作を持つ
 
-```typescript
-// 作成関数はバリデーション付き
-function createMoney(amount: number): Result<Money, Error> {
-  if (amount < 0) return err(new Error("負の金額不可"));
-  return ok(amount as Money);
-}
-```
-
 ### エンティティ
 
 - IDに基づく同一性
@@ -75,10 +62,6 @@ function createMoney(amount: number): Result<Money, Error> {
 - 整合性ルールを持つ
 
 ### Result型
-
-```typescript
-type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
-```
 
 - 成功/失敗を明示
 - 早期リターンパターンを使用
@@ -135,128 +118,14 @@ type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 - テスト可能性を設計に組み込む
 - アサートファースト：期待結果から逆算
 
-
-## Deno の使い方について
-
-### npm 互換モード
-
-私は Deno の Node 互換APIが使えます。
-
-npm のライブラリを参照できる。`npm:zod` のように npm
-からライブラリを参照します。
-
-### 外部ライブラリの使用方法
-
-deno 用のライブラリは多くないので、ユーザーから指定されない限りは node
-互換APIを優先します。
-
-例外的に、以下のURLは node より Deno 互換を優先して使用します。
-
-- `jsr:@david/dax`: コマンドランナー
-- `jsr:@std/expect`: アサーション
-- `jsr:@std/testing`: テストフレームワーク
-
-コードを書き始めるにあたって `docs/libraries/*`
-の下に該当するドキュメントがある場合、ライブラリを使用する前に、これを読み込みます。
-
-docs/librarise にドキュメントが存在しないとき
-
-- `jsr:` の場合、 `deno doc jsr:@scope/pkgName`
-  で、ライブラリ基本的なAPIをを確認します。
-- `npm:` の場合、`npm-summary pkgName`
-  でライブラリの要約を確認することができます。
-
-ライブラリを追加するとき、 deno.json にすでに import
-されていないか確認します。存在しない場合、 `deno add ...` で追加してください
-
-### ソースコード内のモジュールの参照方法
-
-自分のディレクトリ以外のソースコードを確認する時は、 `deno doc ../foo/mod.ts`
-のように型定義だけを確認する。
-
-### テストの書き方
-
-`@std/expect` と `@std/testing/bdd` を使う。 とくに実装上の理由がない限り、
-`describe` による入れ子はしない。
-
-```ts
-import { expect } from "@std/expect";
-import { test } from "@std/testing/bdd";
-
-test("2+3=5", () => {
-  expect(add(2, 3), "sum of numbers").toBe(5);
-});
-```
-
-アサーションの書き方
-
-- `expect(result, "<expected behavior>").toBe("result")`
-  で可能な限り期待する動作を書く
-
-### モジュール間の依存関係
-
-### import ルール
-
-- モジュール間の参照は必ず mod.ts を経由する
-- 他のモジュールのファイルを直接参照してはいけない
-- 同一モジュール内のファイルは相対パスで参照する
-- モジュール内の実装は deps.ts からの re-export を参照する
-
-### 依存関係の検証
-
-依存関係の検証には2つの方法がある
-
-1. コマンドラインでの検証
-
-```bash
-deno task check:deps
-```
-
-このコマンドは以下をチェックする
-
-- モジュール間の import が mod.ts を経由しているか
-- 他のモジュールのファイルを直接参照していないか
-
-2. リントプラグインによる検証
-
-```bash
-deno lint
-```
-
-mod-import リントルールが以下をチェックする：
-
-- モジュール間の import が mod.ts を経由しているか
-- 違反している場合、修正のヒントを提示
-
-リントプラグインは IDE
-と統合することで、コーディング時にリアルタイムでフィードバックを得ることができる。
-
-### コード品質の監視
+## コード品質の監視
 
 ### カバレッジ
 
-カバレッジの取得には `deno task test:cov`
+カバレッジの取得には `pytest --cov=src tests/`
 を使用する。これは以下のコマンドのエイリアス：
 
-```bash
-deno test --coverage=coverage && deno coverage coverage
-```
-
 実行コードと純粋な関数を分離することで、高いカバレッジを維持する：
-
-- 実装（lib.ts）: ロジックを純粋な関数として実装
-- エクスポート（mod.ts）: 外部向けインターフェースの定義
-- 実行（cli.ts）: エントリーポイントとデバッグコード
-
-### デッドコード解析
-
-- TSR (TypeScript Runtime) を使用してデッドコードを検出
-- 未使用のエクスポートや関数を定期的に確認し削除
-
-### 型定義による仕様抽出
-
-- dts を使用して型定義から自動的にドキュメントを生成
-- 型シグネチャに仕様を記述し、dts として抽出する
 
 
 # テスト駆動開発 (TDD) の基本
@@ -283,16 +152,13 @@ deno test --coverage=coverage && deno coverage coverage
 
 テストが通った後のリファクタリングフェーズでは、以下のツールを活用します：
 
-1. **静的解析・型チェック**:
-   - `deno check <target>`
-   - `deno lint <target>`
+1. 静的解析・型チェック（ruffで統一）
+`ruff check <target>  # 静的解析とリンティング`
+`ruff format <target>  # コードフォーマット`
 
-2. **デッドコード検出・削除 (TSR)**:
-   - `deno run -A npm:tsr 'mod\.ts$'`
-
-3. **コードカバレッジ測定**:
-   - `deno test --coverage=coverage <test_file>`
-   - `deno coverage coverage`
+2. テストとカバレッジ（pytest）
+`pytest tests/  # テスト実行`
+`pytest --cov=src tests/  # カバレッジ付きでテスト実行`
 
 4. **Gitによるバージョン管理**:
    - 各フェーズ（テスト作成→実装→リファクタリング）の完了時にコミット
@@ -307,178 +173,73 @@ deno test --coverage=coverage && deno coverage coverage
      - `feat:` - 新機能の実装
      - `refactor:` - リファクタリング
 
-## 詳細情報
+## pythonの基本的な書き方
+あなたは、Python、FastAPI、スケーラブルなAPI開発の専門家です。
 
-Deno環境におけるTDDの詳細な実践方法、例、各種ツールの活用方法については、以下のファイルを参照してください：
+## 主要な原則
 
-```
-.cline/roomodes/deno-tdd.md
-```
+- 簡潔で技術的な回答を記述し、正確なPythonの例を用いること。
+- 関数型・宣言的プログラミングを使用し、可能な限りクラスは避けること。
+- コードの重複を避けるため、繰り返し処理やモジュール化を優先すること。
+- 補助動詞を使った説明的な変数名を使用する（例：`is_active`, `has_permission`）。
+- ディレクトリやファイル名には小文字とアンダースコアを使う（例：`routers/user_routes.py`）。
+- ルートやユーティリティ関数には名前付きエクスポートを使用すること。
+- 「オブジェクトを受け取り、オブジェクトを返す（RORO: Receive an Object, Return an Object）」パターンを採用すること。
 
-このファイルにはテストファーストモードの詳細な手順、テストの命名規約、リファクタリングのベストプラクティスなどが含まれています。
+## Python / FastAPI に関するガイドライン
 
+- 純粋関数には `def` を、非同期処理には `async def` を使うこと。
+- すべての関数シグネチャに型ヒントを付けること。入力の検証には生の辞書ではなく Pydantic モデルを使用することを推奨。
+- ファイル構成：エクスポートされたルーター、サブルート、ユーティリティ、静的コンテンツ、型（モデル、スキーマ）などで整理。
+- 条件文において不要な中括弧 `{}` は使用しない。
+- 条件が単一行で済む場合、中括弧を省略し、1行で記述する（例：`if condition: do_something()`）。
 
-## TypeScript
+## エラーハンドリングとバリデーション
 
-TypeScriptでのコーディングにおける一般的なベストプラクティスをまとめます。
+- エラー処理とエッジケースへの対応を優先する：
+  - 関数の冒頭でエラーやエッジケースを処理すること。
+  - ネストの深いif文を避けるため、エラー条件では早期リターンを行う。
+  - 正常系（ハッピーパス）は関数の最後に書くことで読みやすくする。
+  - 不要な `else` 文は避け、`if-return` パターンを使用する。
+  - ガード節（guard clause）を使って、事前条件や無効な状態を早期に処理する。
+  - 適切なエラーロギングとユーザーフレンドリーなエラーメッセージを実装する。
+  - 一貫性のあるエラー処理のため、カスタムエラー型やエラーファクトリを使用する。
 
-### 方針
+## 依存パッケージ
 
-- 最初に型と、それを処理する関数のインターフェースを考える
-- コードのコメントとして、そのファイルがどういう仕様化を可能な限り明記する
-- 実装が内部状態を持たないとき、 class による実装を避けて関数を優先する
-- 副作用を抽象するために、アダプタパターンで外部依存を抽象し、テストではインメモリなアダプタで処理する
+- FastAPI
+- Pydantic
 
-### 型の使用方針
+## FastAPI 特有のガイドライン
 
-1. 具体的な型を使用
-   - any の使用を避ける
-   - unknown を使用してから型を絞り込む
-   - Utility Types を活用する
+- 入力検証およびレスポンススキーマには、関数（プレーン関数）とPydanticモデルを使用する。
+- 明確な戻り値型アノテーションを伴う宣言的なルート定義を使用する。
+- 同期処理には `def` を、非同期処理には `async def` を使用する。
+- `@app.on_event("startup")` や `@app.on_event("shutdown")` は最小限に抑え、ライフスパンコンテキストマネージャーの使用を優先する。
+- ロギング、エラーモニタリング、パフォーマンス最適化のためにミドルウェアを活用する。
+- I/Oバウンドタスクには非同期関数、キャッシング戦略、遅延読み込みを用いてパフォーマンスを最適化する。
+- 予期されるエラーには `HTTPException` を使用し、具体的なHTTPレスポンスとしてモデル化する。
+- 予期しないエラーの処理、ログ記録、エラーモニタリングはミドルウェアで行う。
+- 入出力の検証やレスポンススキーマには Pydantic の `BaseModel` を使用する。
 
-2. 型エイリアスの命名
-   - 意味のある名前をつける
-   - 型の意図を明確にする
-   ```ts
-   // Good
-   type UserId = string;
-   type UserData = {
-     id: UserId;
-     createdAt: Date;
-   };
+## パフォーマンス最適化
 
-   // Bad
-   type Data = any;
-   ```
+- ブロッキングなI/O操作を最小限にし、すべてのDB呼び出しや外部APIリクエストには非同期操作を使用する。
+- Redisやインメモリストアなどを用いて、静的または頻繁にアクセスされるデータのキャッシュを実装する。
+- Pydanticを使ってデータのシリアライズ／デシリアライズを最適化する。
+- 大規模データセットや大きなAPIレスポンスに対しては遅延読み込み（lazy loading）を用いる。
 
-### エラー処理
+## 重要な慣習
 
-1. Result型の使用
-   ```ts
-   import { err, ok, Result } from "npm:neverthrow";
+1. FastAPIの依存性注入システムを利用して、状態や共有リソースを管理する。
+2. APIのパフォーマンス指標（レスポンスタイム、レイテンシ、スループット）を優先する。
+3. ルートでのブロッキング処理を制限する：
+   - 非同期かつノンブロッキングなフローを優先する。
+   - DBや外部APIの操作には専用の非同期関数を使用する。
+   - ルートと依存関係の構成を明確にして、可読性と保守性を最適化する。
 
-   type ApiError =
-     | { type: "network"; message: string }
-     | { type: "notFound"; message: string }
-     | { type: "unauthorized"; message: string };
+**FastAPIの公式ドキュメント**に記載されている「データモデル」「パス操作」「ミドルウェア」のベストプラクティスを参照してください。
 
-   async function fetchUser(id: string): Promise<Result<User, ApiError>> {
-     try {
-       const response = await fetch(`/api/users/${id}`);
-       if (!response.ok) {
-         switch (response.status) {
-           case 404:
-             return err({ type: "notFound", message: "User not found" });
-           case 401:
-             return err({ type: "unauthorized", message: "Unauthorized" });
-           default:
-             return err({
-               type: "network",
-               message: `HTTP error: ${response.status}`,
-             });
-         }
-       }
-       return ok(await response.json());
-     } catch (error) {
-       return err({
-         type: "network",
-         message: error instanceof Error ? error.message : "Unknown error",
-       });
-     }
-   }
-   ```
-
-2. エラー型の定義
-   - 具体的なケースを列挙
-   - エラーメッセージを含める
-   - 型の網羅性チェックを活用
-
-### 実装パターン
-
-1. 関数ベース（状態を持たない場合）
-   ```ts
-   // インターフェース
-   interface Logger {
-     log(message: string): void;
-   }
-
-   // 実装
-   function createLogger(): Logger {
-     return {
-       log(message: string): void {
-         console.log(`[${new Date().toISOString()}] ${message}`);
-       },
-     };
-   }
-   ```
-
-2. classベース（状態を持つ場合）
-   ```ts
-   interface Cache<T> {
-     get(key: string): T | undefined;
-     set(key: string, value: T): void;
-   }
-
-   class TimeBasedCache<T> implements Cache<T> {
-     private items = new Map<string, { value: T; expireAt: number }>();
-
-     constructor(private ttlMs: number) {}
-
-     get(key: string): T | undefined {
-       const item = this.items.get(key);
-       if (!item || Date.now() > item.expireAt) {
-         return undefined;
-       }
-       return item.value;
-     }
-
-     set(key: string, value: T): void {
-       this.items.set(key, {
-         value,
-         expireAt: Date.now() + this.ttlMs,
-       });
-     }
-   }
-   ```
-
-3. Adapterパターン（外部依存の抽象化）
-   ```ts
-   // 抽象化
-   type Fetcher = <T>(path: string) => Promise<Result<T, ApiError>>;
-
-   // 実装
-   function createFetcher(headers: Record<string, string>): Fetcher {
-     return async <T>(path: string) => {
-       try {
-         const response = await fetch(path, { headers });
-         if (!response.ok) {
-           return err({
-             type: "network",
-             message: `HTTP error: ${response.status}`,
-           });
-         }
-         return ok(await response.json());
-       } catch (error) {
-         return err({
-           type: "network",
-           message: error instanceof Error ? error.message : "Unknown error",
-         });
-       }
-     };
-   }
-
-   // 利用
-   class ApiClient {
-     constructor(
-       private readonly getData: Fetcher,
-       private readonly baseUrl: string,
-     ) {}
-
-     async getUser(id: string): Promise<Result<User, ApiError>> {
-       return await this.getData(`${this.baseUrl}/users/${id}`);
-     }
-   }
-   ```
 
 ### 実装の選択基準
 

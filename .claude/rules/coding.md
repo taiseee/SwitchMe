@@ -27,12 +27,7 @@
 
 ### 型定義
 
-```typescript
-// ブランデッド型で型安全性を確保
-type Branded<T, B> = T & { _brand: B };
-type Money = Branded<number, "Money">;
-type Email = Branded<string, "Email">;
-```
+pydanticを使用して型を定義
 
 ### 値オブジェクト
 
@@ -41,14 +36,6 @@ type Email = Branded<string, "Email">;
 - 自己検証
 - ドメイン操作を持つ
 
-```typescript
-// 作成関数はバリデーション付き
-function createMoney(amount: number): Result<Money, Error> {
-  if (amount < 0) return err(new Error("負の金額不可"));
-  return ok(amount as Money);
-}
-```
-
 ### エンティティ
 
 - IDに基づく同一性
@@ -56,10 +43,6 @@ function createMoney(amount: number): Result<Money, Error> {
 - 整合性ルールを持つ
 
 ### Result型
-
-```typescript
-type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
-```
 
 - 成功/失敗を明示
 - 早期リターンパターンを使用
