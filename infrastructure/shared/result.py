@@ -30,6 +30,10 @@ class Ok(Generic[T, E]):
         """値を取り出す"""
         return self._value
 
+    def unwrap_err(self) -> E:
+        """エラー値を取り出す（成功時は例外を発生）"""
+        raise RuntimeError("Called unwrap_err on Ok value")
+
     def unwrap_or(self, default: T) -> T:
         """値を取り出す。失敗の場合はデフォルト値を返す"""
         return self._value
@@ -60,6 +64,10 @@ class Err(Generic[T, E]):
     def unwrap(self) -> T:
         """値を取り出す（失敗時は例外を発生）"""
         raise RuntimeError(str(self._error))
+
+    def unwrap_err(self) -> E:
+        """エラー値を取り出す"""
+        return self._error
 
     def unwrap_or(self, default: T) -> T:
         """値を取り出す。失敗の場合はデフォルト値を返す"""

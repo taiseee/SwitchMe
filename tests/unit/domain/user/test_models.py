@@ -4,7 +4,33 @@ from datetime import datetime, timezone
 from uuid import UUID
 import pytest
 from pydantic import ValidationError
-from domain.user.models import UserId, Email, HashedPassword, UserStatus, User
+from domain.user.models import (
+    UserId,
+    Email,
+    HashedPassword,
+    UserStatus,
+    User,
+    OAuthProvider,
+)
+
+
+class TestOAuthProvider:
+    """OAuthProviderのテスト"""
+
+    def test_googleプロバイダーで作成できること(self):
+        """googleプロバイダーでOAuthProviderが作成できること"""
+        provider = OAuthProvider(value="google")
+        assert provider.value == "google"
+
+    def test_デフォルト値はgoogleであること(self):
+        """デフォルト値がgoogleであること"""
+        provider = OAuthProvider()
+        assert provider.value == "google"
+
+    def test_google以外のプロバイダーは拒否されること(self):
+        """google以外のプロバイダーは拒否されること"""
+        with pytest.raises(ValidationError):
+            OAuthProvider(value="facebook")  # type: ignore
 
 
 class TestEmail:
@@ -72,15 +98,17 @@ class TestUserStatus:
 class TestUser:
     """Userのテスト"""
 
-    def test_userが作成できること(self):
-        """Userが作成できること"""
+    def test_OAuth認証でuserが作成できること(self):
+        """OAuth認証でUserが作成できること"""
         user = User.create(
             email=Email(value="test@example.com"),
-            hashed_password=HashedPassword(value="$2b$12$hashed"),
+            oauth_provider=OAuthProvider(value="google"),
+            oauth_user_id="google_user_123",
         )
         assert isinstance(user.id, UserId)
         assert user.email.value == "test@example.com"
-        assert user.hashed_password.value == "$2b$12$hashed"
+        assert user.oauth_provider.value == "google"
+        assert user.oauth_user_id == "google_user_123"
         assert user.status.status == "active"
         assert user.status.last_login_at is None
 
@@ -88,7 +116,8 @@ class TestUser:
         """login()を呼ぶと最終ログイン日時が更新されること"""
         user = User.create(
             email=Email(value="test@example.com"),
-            hashed_password=HashedPassword(value="$2b$12$hashed"),
+            oauth_provider=OAuthProvider(value="google"),
+            oauth_user_id="google_user_123",
         )
         assert user.status.last_login_at is None
 
@@ -106,7 +135,8 @@ class TestUser:
         """delete_account()を呼ぶとステータスがdeletedになること"""
         user = User.create(
             email=Email(value="test@example.com"),
-            hashed_password=HashedPassword(value="$2b$12$hashed"),
+            oauth_provider=OAuthProvider(value="google"),
+            oauth_user_id="google_user_123",
         )
         assert user.status.status == "active"
 
@@ -119,7 +149,8 @@ class TestUser:
         """Userは不変（frozen）であること"""
         user = User.create(
             email=Email(value="test@example.com"),
-            hashed_password=HashedPassword(value="$2b$12$hashed"),
+            oauth_provider=OAuthProvider(value="google"),
+            oauth_user_id="google_user_123",
         )
         with pytest.raises((ValidationError, AttributeError)):
             user.email = Email(value="new@example.com")  # type: ignore
@@ -130,13 +161,15 @@ class TestUser:
         user1 = User(
             id=user_id,
             email=Email(value="test1@example.com"),
-            hashed_password=HashedPassword(value="$2b$12$hashed1"),
+            oauth_provider=OAuthProvider(value="google"),
+            oauth_user_id="google_user_1",
             status=UserStatus(status="active", last_login_at=None),
         )
         user2 = User(
             id=user_id,
             email=Email(value="test2@example.com"),  # 異なるメール
-            hashed_password=HashedPassword(value="$2b$12$hashed2"),  # 異なるパスワード
+            oauth_provider=OAuthProvider(value="google"),
+            oauth_user_id="google_user_2",  # 異なるOAuthユーザーID
             status=UserStatus(status="active", last_login_at=None),
         )
         # エンティティの同一性はIDで判断（Pydanticのデフォルトはすべてのフィールドを比較）

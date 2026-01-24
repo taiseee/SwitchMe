@@ -7,6 +7,14 @@ from pydantic import BaseModel, Field, field_validator
 import re
 
 
+class OAuthProvider(BaseModel):
+    """OAuthプロバイダー（値オブジェクト）"""
+
+    model_config = {"frozen": True}
+
+    value: Literal["google"] = "google"
+
+
 class UserId(BaseModel):
     """ユーザーID（値オブジェクト）"""
 
@@ -64,16 +72,20 @@ class User(BaseModel):
 
     id: UserId
     email: Email
-    hashed_password: HashedPassword
+    oauth_provider: OAuthProvider
+    oauth_user_id: str
     status: UserStatus
 
     @classmethod
-    def create(cls, email: Email, hashed_password: HashedPassword) -> "User":
+    def create(
+        cls, email: Email, oauth_provider: OAuthProvider, oauth_user_id: str
+    ) -> "User":
         """新しいユーザーを作成する
 
         Args:
             email: メールアドレス
-            hashed_password: ハッシュ化されたパスワード
+            oauth_provider: OAuthプロバイダー
+            oauth_user_id: OAuthプロバイダーのユーザーID
 
         Returns:
             作成されたユーザー
@@ -81,7 +93,8 @@ class User(BaseModel):
         return cls(
             id=UserId(value=uuid4()),
             email=email,
-            hashed_password=hashed_password,
+            oauth_provider=oauth_provider,
+            oauth_user_id=oauth_user_id,
             status=UserStatus(status="active", last_login_at=None),
         )
 

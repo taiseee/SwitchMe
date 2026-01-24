@@ -1,7 +1,7 @@
 """Userリポジトリのテスト"""
 
 import pytest
-from domain.user.models import User, UserId, Email, HashedPassword
+from domain.user.models import User, UserId, Email, OAuthProvider
 from domain.user.repositories import InMemoryUserRepository
 
 
@@ -16,7 +16,8 @@ def sample_user():
     """テスト用のサンプルユーザー"""
     return User.create(
         email=Email(value="test@example.com"),
-        hashed_password=HashedPassword(value="$2b$12$hashed"),
+        oauth_provider=OAuthProvider(value="google"),
+        oauth_user_id="google_user_123",
     )
 
 
@@ -48,6 +49,24 @@ class TestInMemoryUserRepository:
         assert found_user.id == sample_user.id
         assert found_user.email == sample_user.email
 
+    def test_OAuthプロバイダーとユーザーIDでユーザーを検索できること(
+        self, repository, sample_user
+    ):
+        """OAuthプロバイダーとユーザーIDでユーザーを検索できること"""
+        # 保存
+        repository.save(sample_user)
+
+        # OAuthで検索
+        found_result = repository.find_by_oauth(
+            oauth_provider=sample_user.oauth_provider,
+            oauth_user_id=sample_user.oauth_user_id,
+        )
+        assert found_result.is_ok()
+        found_user = found_result.unwrap()
+        assert found_user.id == sample_user.id
+        assert found_user.oauth_provider == sample_user.oauth_provider
+        assert found_user.oauth_user_id == sample_user.oauth_user_id
+
     def test_存在しないユーザーのid検索はerrを返すこと(self, repository):
         """存在しないユーザーのID検索はErrを返すこと"""
         from uuid import uuid4
@@ -60,6 +79,14 @@ class TestInMemoryUserRepository:
         """存在しないユーザーのメールアドレス検索はErrを返すこと"""
         non_existent_email = Email(value="nonexistent@example.com")
         result = repository.find_by_email(non_existent_email)
+        assert result.is_err()
+
+    def test_存在しないユーザーのOAuth検索はerrを返すこと(self, repository):
+        """存在しないユーザーのOAuth検索はErrを返すこと"""
+        result = repository.find_by_oauth(
+            oauth_provider=OAuthProvider(value="google"),
+            oauth_user_id="nonexistent_user_id",
+        )
         assert result.is_err()
 
     def test_ユーザーを削除できること(self, repository, sample_user):

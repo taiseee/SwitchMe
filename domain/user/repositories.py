@@ -1,7 +1,7 @@
 """Userリポジトリ"""
 
 from typing import Protocol
-from domain.user.models import User, UserId, Email
+from domain.user.models import User, UserId, Email, OAuthProvider
 from infrastructure.shared.result import Result, Ok, Err
 from domain.shared.exceptions import EntityNotFoundError
 
@@ -46,6 +46,20 @@ class UserRepository(Protocol):
         """
         ...
 
+    def find_by_oauth(
+        self, oauth_provider: OAuthProvider, oauth_user_id: str
+    ) -> Result[User, EntityNotFoundError]:
+        """OAuthプロバイダーとユーザーIDでユーザーを検索する
+
+        Args:
+            oauth_provider: OAuthプロバイダー
+            oauth_user_id: OAuthプロバイダーのユーザーID
+
+        Returns:
+            成功時はOk(User)、失敗時はErr(EntityNotFoundError)
+        """
+        ...
+
     def delete(self, user_id: UserId) -> Result[None, Exception]:
         """ユーザーを削除する
 
@@ -82,6 +96,20 @@ class InMemoryUserRepository:
             if user.email.value == email.value:
                 return Ok(user)
         return Err(EntityNotFoundError("User", email.value))
+
+    def find_by_oauth(
+        self, oauth_provider: OAuthProvider, oauth_user_id: str
+    ) -> Result[User, EntityNotFoundError]:
+        """OAuthプロバイダーとユーザーIDでユーザーを検索する"""
+        for user in self._users.values():
+            if (
+                user.oauth_provider == oauth_provider
+                and user.oauth_user_id == oauth_user_id
+            ):
+                return Ok(user)
+        return Err(
+            EntityNotFoundError("User", f"{oauth_provider.value}:{oauth_user_id}")
+        )
 
     def delete(self, user_id: UserId) -> Result[None, Exception]:
         """ユーザーを削除する"""
