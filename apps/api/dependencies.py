@@ -4,6 +4,7 @@ import os
 from fastapi import Cookie, HTTPException
 from domain.user.models import User
 from domain.user.repositories import InMemoryUserRepository
+from domain.milestone.repositories import InMemoryMilestoneRepository
 from infrastructure.auth.adapters.oauth_client import MockGoogleOAuthClient
 from infrastructure.auth.adapters.token_manager import JWTTokenManager
 from application.auth.use_cases import (
@@ -15,6 +16,7 @@ from application.auth.use_cases import (
 
 # シングルトンインスタンス（本番環境では適切なライフサイクル管理が必要）
 _user_repository = InMemoryUserRepository()
+_milestone_repository = InMemoryMilestoneRepository()
 _oauth_client = MockGoogleOAuthClient()
 _token_manager = JWTTokenManager(
     secret_key=os.getenv(
@@ -26,6 +28,11 @@ _token_manager = JWTTokenManager(
 def get_user_repository():
     """ユーザーリポジトリを取得"""
     return _user_repository
+
+
+def get_milestone_repository():
+    """マイルストーンリポジトリを取得"""
+    return _milestone_repository
 
 
 def get_oauth_client():
