@@ -1,3 +1,31 @@
 {
-  "plansDirectory": "./docs/plans"
+  "plansDirectory": "./docs/plans",
+  "permissions": {
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "NotebookEdit(./**)",
+      "Bash"
+    ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~/*)",
+      "Bash(rm -rf $HOME/*)",
+      "Bash(sudo *)",
+      "Bash(su *)",
+      "Bash(git config *)",
+      "Bash(chmod 777 *)",
+      "Bash(chmod -R 777 /*)",
+      "Bash(dd *)",
+      "Bash(mkfs *)",
+      "Bash(shutdown *)",
+      "Bash(reboot *)",
+      "Bash(gh repo delete *)",
+      "Write(./.claude/settings.json)",
+      "Edit(./.claude/settings.json)"
+    ]
+  }
 }
