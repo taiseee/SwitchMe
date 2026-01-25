@@ -2,7 +2,7 @@
 
 import pytest
 from uuid import uuid4
-from domain.user.models import User, UserId, Email, OAuthProvider
+from domain.user.models import User, Email, OAuthProvider
 from domain.user.repositories import InMemoryUserRepository
 from infrastructure.auth.adapters.oauth_client import MockGoogleOAuthClient
 from infrastructure.auth.adapters.token_manager import JWTTokenManager
@@ -74,9 +74,7 @@ class TestGoogleCallbackUseCase:
         )
         assert user_result.is_ok()
 
-    def test_既存ユーザーの場合はトークンを返すこと(
-        self, use_case, user_repository
-    ):
+    def test_既存ユーザーの場合はトークンを返すこと(self, use_case, user_repository):
         """既存ユーザーの場合はトークンを返すこと"""
         # 事前にユーザーを作成
         existing_user = User.create(

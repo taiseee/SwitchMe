@@ -8,13 +8,11 @@ from domain.user.models import User
 from application.auth.use_cases import (
     GoogleLoginUseCase,
     GoogleCallbackUseCase,
-    GetCurrentUserUseCase,
     LogoutUseCase,
 )
 from apps.api.dependencies import (
     get_google_login_use_case,
     get_google_callback_use_case,
-    get_get_current_user_use_case,
     get_logout_use_case,
     get_current_user,
 )

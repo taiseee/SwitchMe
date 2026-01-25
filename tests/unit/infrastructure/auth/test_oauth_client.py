@@ -1,8 +1,6 @@
 """GoogleOAuthClientのテスト"""
 
-import pytest
 from infrastructure.auth.adapters.oauth_client import (
-    GoogleOAuthClient,
     GoogleUserInfo,
     MockGoogleOAuthClient,
 )

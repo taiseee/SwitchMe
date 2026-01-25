@@ -97,9 +97,7 @@ class GoogleCallbackUseCase:
 class GetCurrentUserUseCase:
     """現在のユーザー取得ユースケース"""
 
-    def __init__(
-        self, token_manager: TokenManager, user_repository: UserRepository
-    ):
+    def __init__(self, token_manager: TokenManager, user_repository: UserRepository):
         """
         Args:
             token_manager: トークンマネージャー

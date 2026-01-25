@@ -82,9 +82,7 @@ class TestTokenPayload:
         payload = TokenPayload(
             user_id="12345678-1234-5678-1234-567812345678",
             email="test@example.com",
-            exp=int(
-                (datetime.now(timezone.utc) + timedelta(minutes=30)).timestamp()
-            ),
+            exp=int((datetime.now(timezone.utc) + timedelta(minutes=30)).timestamp()),
         )
 
         assert payload.user_id == "12345678-1234-5678-1234-567812345678"

@@ -17,7 +17,9 @@ from application.auth.use_cases import (
 _user_repository = InMemoryUserRepository()
 _oauth_client = MockGoogleOAuthClient()
 _token_manager = JWTTokenManager(
-    secret_key=os.getenv("JWT_SECRET_KEY", "development_secret_key_change_in_production")
+    secret_key=os.getenv(
+        "JWT_SECRET_KEY", "development_secret_key_change_in_production"
+    )
 )
 
 

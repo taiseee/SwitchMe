@@ -1,6 +1,5 @@
 """認証API統合テスト"""
 
-import pytest
 from fastapi.testclient import TestClient
 from apps.api.main import app
 from domain.user.models import User, Email, OAuthProvider
@@ -23,7 +22,10 @@ class TestAuthAPI:
 
         assert response.status_code == 307  # RedirectResponse
         assert "location" in response.headers
-        assert "https://accounts.google.com/o/oauth2/v2/auth" in response.headers["location"]
+        assert (
+            "https://accounts.google.com/o/oauth2/v2/auth"
+            in response.headers["location"]
+        )
 
     def test_正しいコードでコールバックが成功すること(self):
         """GET /api/v1/auth/google/callbackで正しいコードで認証が成功すること"""
@@ -63,9 +65,7 @@ class TestAuthAPI:
         )
 
         # ユーザー情報を取得
-        response = client.get(
-            "/api/v1/auth/me", cookies={"access_token": access_token}
-        )
+        response = client.get("/api/v1/auth/me", cookies={"access_token": access_token})
 
         assert response.status_code == 200
         data = response.json()
