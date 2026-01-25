@@ -21,6 +21,13 @@ class PostgresMilestoneRepository:
     def __init__(self, session: AsyncSession):
         self._session = session
 
+    async def _commit_or_flush(self) -> None:
+        """テスト時はcommitせずflushに切り替える"""
+        if self._session.info.get("skip_commit", False):
+            await self._session.flush()
+            return
+        await self._session.commit()
+
     async def save(self, milestone: Milestone) -> Result[None, Exception]:
         """マイルストーンを保存（INSERT or UPDATE）"""
         try:
@@ -52,7 +59,7 @@ class PostgresMilestoneRepository:
                 # INSERT
                 self._session.add(milestone_model)
 
-            await self._session.commit()
+            await self._commit_or_flush()
             return Ok(None)
         except Exception as e:
             await self._session.rollback()
@@ -96,7 +103,7 @@ class PostgresMilestoneRepository:
                 return Err(EntityNotFoundError("Milestone", str(milestone_id.value)))
 
             await self._session.delete(model)
-            await self._session.commit()
+            await self._commit_or_flush()
             return Ok(None)
         except Exception as e:
             await self._session.rollback()
