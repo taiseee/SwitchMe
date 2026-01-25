@@ -1,30 +1,30 @@
 """PostgreSQL User Repository統合テスト"""
 
 import pytest
+import os
 from uuid import uuid4
-from datetime import datetime, timezone
 
-from domain.user.models import User, UserId, Email
+from domain.user.models import User, UserId, Email, OAuthProvider
 from infrastructure.user.persistence.repository import PostgresUserRepository
-from infrastructure.shared.database import get_engine
-from infrastructure.shared.models import Base
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from infrastructure.shared.models import UserModel
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 
 @pytest.fixture(scope="module")
 async def engine():
-    """テスト用エンジン"""
-    test_engine = get_engine()
-
-    # テーブル作成
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """テスト用エンジン（Supabase）"""
+    # Supabase URLを使用
+    database_url = os.getenv(
+        "DATABASE_URL",
+        "postgresql+asyncpg://postgres:postgres@127.0.0.1:54322/postgres",
+    )
+    test_engine = create_async_engine(database_url, echo=False)
 
     yield test_engine
-
-    # テーブル削除
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
 
     await test_engine.dispose()
 
@@ -37,9 +37,11 @@ async def db_session(engine):
     )
 
     async with async_session() as session:
-        async with session.begin():
-            yield session
-            await session.rollback()
+        yield session
+
+        # テスト後にデータをクリア
+        await session.execute(UserModel.__table__.delete())
+        await session.commit()
 
 
 @pytest.mark.anyio
@@ -51,7 +53,7 @@ async def test_ユーザーを保存して取得できること(db_session):
     repository = PostgresUserRepository(db_session)
     user = User.create(
         email=Email(value="test@example.com"),
-        oauth_provider="google",
+        oauth_provider=OAuthProvider(),
         oauth_user_id="google_123",
     )
 
@@ -80,7 +82,7 @@ async def test_メールアドレスでユーザーを検索できること(db_s
     email = Email(value="search@example.com")
     user = User.create(
         email=email,
-        oauth_provider="google",
+        oauth_provider=OAuthProvider(),
         oauth_user_id="google_456",
     )
     await repository.save(user)
@@ -103,7 +105,7 @@ async def test_OAuthプロバイダーとユーザーIDでユーザーを検索�
     repository = PostgresUserRepository(db_session)
     user = User.create(
         email=Email(value="oauth@example.com"),
-        oauth_provider="google",
+        oauth_provider=OAuthProvider(),
         oauth_user_id="google_789",
     )
     await repository.save(user)
@@ -114,7 +116,7 @@ async def test_OAuthプロバイダーとユーザーIDでユーザーを検索�
     # Then
     assert result.is_ok()
     found_user = result.unwrap()
-    assert found_user.oauth_provider == "google"
+    assert found_user.oauth_provider.value == "google"
     assert found_user.oauth_user_id == "google_789"
 
 
@@ -159,7 +161,7 @@ async def test_ユーザーを削除できること(db_session):
     repository = PostgresUserRepository(db_session)
     user = User.create(
         email=Email(value="delete@example.com"),
-        oauth_provider="google",
+        oauth_provider=OAuthProvider(),
         oauth_user_id="google_delete",
     )
     await repository.save(user)
@@ -182,7 +184,7 @@ async def test_ユーザーを更新できること(db_session):
     repository = PostgresUserRepository(db_session)
     user = User.create(
         email=Email(value="update@example.com"),
-        oauth_provider="google",
+        oauth_provider=OAuthProvider(),
         oauth_user_id="google_update",
     )
     await repository.save(user)
@@ -196,4 +198,4 @@ async def test_ユーザーを更新できること(db_session):
     find_result = await repository.find_by_id(user.id)
     assert find_result.is_ok()
     found_user = find_result.unwrap()
-    assert found_user.last_login_at is not None
+    assert found_user.status.last_login_at is not None

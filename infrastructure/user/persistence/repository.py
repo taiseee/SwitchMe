@@ -1,6 +1,6 @@
 """PostgreSQL User Repository implementation"""
 
-from datetime import datetime
+from datetime import datetime, UTC
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -35,7 +35,7 @@ class PostgresUserRepository:
                 existing.oauth_user_id = user_model.oauth_user_id
                 existing.status = user_model.status
                 existing.last_login_at = user_model.last_login_at
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(UTC)
             else:
                 # INSERT
                 self._session.add(user_model)
