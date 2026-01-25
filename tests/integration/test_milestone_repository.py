@@ -1,7 +1,6 @@
 """PostgreSQL Milestone Repository統合テスト"""
 
 import pytest
-import os
 from uuid import uuid4
 from datetime import date, time
 
@@ -11,43 +10,6 @@ from domain.user.models import User, UserId, Email, OAuthProvider
 from domain.shared.value_objects import Money
 from infrastructure.milestone.persistence.repository import PostgresMilestoneRepository
 from infrastructure.user.persistence.repository import PostgresUserRepository
-from infrastructure.shared.models import MilestoneModel, UserModel
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-
-
-@pytest.fixture(scope="module")
-async def engine():
-    """テスト用エンジン（Supabase）"""
-    # Supabase URLを使用
-    database_url = os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgres@127.0.0.1:54322/postgres",
-    )
-    test_engine = create_async_engine(database_url, echo=False)
-
-    yield test_engine
-
-    await test_engine.dispose()
-
-
-@pytest.fixture
-async def db_session(engine):
-    """各テストで独立したセッション"""
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-
-    async with async_session() as session:
-        yield session
-
-        # テスト後にデータをクリア
-        await session.execute(MilestoneModel.__table__.delete())
-        await session.execute(UserModel.__table__.delete())
-        await session.commit()
 
 
 @pytest.mark.anyio
@@ -88,8 +50,6 @@ async def test_マイルストーンを保存して取得できること(db_sess
 
     # When
     save_result = await repository.save(milestone)
-    if save_result.is_err():
-        print(f"Save error: {save_result.unwrap_err()}")
     assert save_result.is_ok()
 
     find_result = await repository.find_by_id(milestone.id)

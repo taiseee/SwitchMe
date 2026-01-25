@@ -1,47 +1,10 @@
 """PostgreSQL User Repository統合テスト"""
 
 import pytest
-import os
 from uuid import uuid4
 
 from domain.user.models import User, UserId, Email, OAuthProvider
 from infrastructure.user.persistence.repository import PostgresUserRepository
-from infrastructure.shared.models import UserModel
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-
-
-@pytest.fixture(scope="module")
-async def engine():
-    """テスト用エンジン（Supabase）"""
-    # Supabase URLを使用
-    database_url = os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgres@127.0.0.1:54322/postgres",
-    )
-    test_engine = create_async_engine(database_url, echo=False)
-
-    yield test_engine
-
-    await test_engine.dispose()
-
-
-@pytest.fixture
-async def db_session(engine):
-    """各テストで独立したセッション"""
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-
-    async with async_session() as session:
-        yield session
-
-        # テスト後にデータをクリア
-        await session.execute(UserModel.__table__.delete())
-        await session.commit()
 
 
 @pytest.mark.anyio
@@ -111,7 +74,8 @@ async def test_OAuthプロバイダーとユーザーIDでユーザーを検索�
     await repository.save(user)
 
     # When
-    result = await repository.find_by_oauth("google", "google_789")
+    oauth_provider = OAuthProvider()
+    result = await repository.find_by_oauth(oauth_provider, "google_789")
 
     # Then
     assert result.is_ok()

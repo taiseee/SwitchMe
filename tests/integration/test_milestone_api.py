@@ -1,41 +1,34 @@
 """Milestone API統合テスト"""
 
 import pytest
-from httpx import AsyncClient, ASGITransport
-from apps.api.main import app
-from domain.user.models import User, Email, OAuthProvider
-from apps.api.dependencies import (
-    _user_repository,
-    _milestone_repository,
-    _token_manager,
-)
+from httpx import ASGITransport, AsyncClient
+
+from apps.api.dependencies import get_token_manager
+from domain.user.models import Email, OAuthProvider, User
+from infrastructure.user.persistence.repository import PostgresUserRepository
 
 
 class TestMilestoneAPI:
     """Milestone APIの統合テスト"""
 
-    def setup_method(self):
-        """各テストメソッドの前に実行"""
-        # リポジトリをクリア
-        _user_repository._users.clear()
-        _milestone_repository._milestones.clear()
-
-    async def _create_authenticated_user(self):
+    async def _create_authenticated_user(self, db_session):
         """認証済みユーザーを作成してトークンを返す"""
+        repository = PostgresUserRepository(db_session)
         user = User.create(
             email=Email(value="test@example.com"),
             oauth_provider=OAuthProvider(value="google"),
             oauth_user_id="google_user_123",
         )
-        await _user_repository.save(user)
+        await repository.save(user)
 
-        access_token = _token_manager.create_access_token(
+        token_manager = get_token_manager()
+        access_token = token_manager.create_access_token(
             str(user.id.value), user.email.value
         )
         return user, access_token
 
     @pytest.mark.anyio
-    async def test_未認証ユーザーはマイルストーン作成できないこと(self):
+    async def test_未認証ユーザーはマイルストーン作成できないこと(self, app_with_db):
         """POST /api/v1/milestonesで未認証ユーザーは401エラーになること"""
         milestone_data = {
             "title": "朝のランニング",
@@ -50,7 +43,7 @@ class TestMilestoneAPI:
         }
 
         async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
+            transport=ASGITransport(app=app_with_db), base_url="http://test"
         ) as client:
             response = await client.post("/api/v1/milestones", json=milestone_data)
 
@@ -58,9 +51,9 @@ class TestMilestoneAPI:
         assert "Not authenticated" in response.json()["detail"]
 
     @pytest.mark.anyio
-    async def test_認証済みユーザーはマイルストーン作成できること(self):
+    async def test_認証済みユーザーはマイルストーン作成できること(self, app_with_db, db_session):
         """POST /api/v1/milestonesで認証済みユーザーはマイルストーンを作成できること"""
-        user, access_token = await self._create_authenticated_user()
+        user, access_token = await self._create_authenticated_user(db_session)
 
         milestone_data = {
             "title": "朝のランニング",
@@ -75,7 +68,7 @@ class TestMilestoneAPI:
         }
 
         async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
+            transport=ASGITransport(app=app_with_db), base_url="http://test"
         ) as client:
             response = await client.post(
                 "/api/v1/milestones",
@@ -89,11 +82,10 @@ class TestMilestoneAPI:
         assert data["user_id"] == str(user.id.value)
 
     @pytest.mark.anyio
-    async def test_認証済みユーザーはマイルストーン一覧を取得できること(self):
+    async def test_認証済みユーザーはマイルストーン一覧を取得できること(self, app_with_db, db_session):
         """GET /api/v1/milestonesで認証済みユーザーはマイルストーン一覧を取得できること"""
-        user, access_token = await self._create_authenticated_user()
+        _, access_token = await self._create_authenticated_user(db_session)
 
-        # マイルストーンを作成
         milestone_data = {
             "title": "朝のランニング",
             "deadline_date": "2026-01-26",
@@ -107,7 +99,7 @@ class TestMilestoneAPI:
         }
 
         async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
+            transport=ASGITransport(app=app_with_db), base_url="http://test"
         ) as client:
             await client.post(
                 "/api/v1/milestones",
@@ -115,7 +107,6 @@ class TestMilestoneAPI:
                 cookies={"access_token": access_token},
             )
 
-            # マイルストーン一覧を取得
             response = await client.get(
                 "/api/v1/milestones", cookies={"access_token": access_token}
             )
@@ -126,10 +117,10 @@ class TestMilestoneAPI:
         assert data[0]["title"] == "朝のランニング"
 
     @pytest.mark.anyio
-    async def test_未認証ユーザーはマイルストーン一覧を取得できないこと(self):
+    async def test_未認証ユーザーはマイルストーン一覧を取得できないこと(self, app_with_db):
         """GET /api/v1/milestonesで未認証ユーザーは401エラーになること"""
         async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
+            transport=ASGITransport(app=app_with_db), base_url="http://test"
         ) as client:
             response = await client.get("/api/v1/milestones")
 
@@ -137,11 +128,10 @@ class TestMilestoneAPI:
         assert "Not authenticated" in response.json()["detail"]
 
     @pytest.mark.anyio
-    async def test_認証済みユーザーはマイルストーンを更新できること(self):
+    async def test_認証済みユーザーはマイルストーンを更新できること(self, app_with_db, db_session):
         """PUT /api/v1/milestones/{milestone_id}で認証済みユーザーはマイルストーンを更新できること"""
-        user, access_token = await self._create_authenticated_user()
+        _, access_token = await self._create_authenticated_user(db_session)
 
-        # マイルストーンを作成
         milestone_data = {
             "title": "朝のランニング",
             "deadline_date": "2026-01-26",
@@ -155,7 +145,7 @@ class TestMilestoneAPI:
         }
 
         async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
+            transport=ASGITransport(app=app_with_db), base_url="http://test"
         ) as client:
             create_response = await client.post(
                 "/api/v1/milestones",
@@ -164,7 +154,6 @@ class TestMilestoneAPI:
             )
             milestone_id = create_response.json()["id"]
 
-            # マイルストーンを更新
             update_data = {"title": "朝のジョギング"}
 
             response = await client.put(
@@ -178,11 +167,10 @@ class TestMilestoneAPI:
         assert data["title"] == "朝のジョギング"
 
     @pytest.mark.anyio
-    async def test_認証済みユーザーはマイルストーンを削除できること(self):
+    async def test_認証済みユーザーはマイルストーンを削除できること(self, app_with_db, db_session):
         """DELETE /api/v1/milestones/{milestone_id}で認証済みユーザーはマイルストーンを削除できること"""
-        user, access_token = await self._create_authenticated_user()
+        _, access_token = await self._create_authenticated_user(db_session)
 
-        # マイルストーンを作成
         milestone_data = {
             "title": "朝のランニング",
             "deadline_date": "2026-01-26",
@@ -196,7 +184,7 @@ class TestMilestoneAPI:
         }
 
         async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
+            transport=ASGITransport(app=app_with_db), base_url="http://test"
         ) as client:
             create_response = await client.post(
                 "/api/v1/milestones",
@@ -205,7 +193,6 @@ class TestMilestoneAPI:
             )
             milestone_id = create_response.json()["id"]
 
-            # マイルストーンを削除
             response = await client.delete(
                 f"/api/v1/milestones/{milestone_id}",
                 cookies={"access_token": access_token},
@@ -213,7 +200,6 @@ class TestMilestoneAPI:
 
             assert response.status_code == 200
 
-            # 一覧取得で確認
             list_response = await client.get(
                 "/api/v1/milestones", cookies={"access_token": access_token}
             )
