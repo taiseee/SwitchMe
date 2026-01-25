@@ -7,7 +7,6 @@ from pydantic import ValidationError
 from domain.user.models import (
     UserId,
     Email,
-    HashedPassword,
     UserStatus,
     User,
     OAuthProvider,
@@ -63,15 +62,6 @@ class TestUserId:
         uuid_value = UUID("12345678-1234-5678-1234-567812345678")
         user_id = UserId(value=uuid_value)
         assert user_id.value == uuid_value
-
-
-class TestHashedPassword:
-    """HashedPasswordのテスト"""
-
-    def test_ハッシュ化されたパスワードで作成できること(self):
-        """ハッシュ化されたパスワードでHashedPasswordが作成できること"""
-        hashed = HashedPassword(value="$2b$12$hashed_password_value")
-        assert hashed.value == "$2b$12$hashed_password_value"
 
 
 class TestUserStatus:

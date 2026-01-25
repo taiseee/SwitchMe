@@ -41,14 +41,6 @@ class Email(BaseModel):
         return v
 
 
-class HashedPassword(BaseModel):
-    """ハッシュ化されたパスワード（値オブジェクト）"""
-
-    model_config = {"frozen": True}
-
-    value: str = Field(...)
-
-
 UserStatusType = Literal["active", "suspended", "deleted"]
 
 
