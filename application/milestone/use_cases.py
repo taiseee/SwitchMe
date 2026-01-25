@@ -50,7 +50,9 @@ class CreateMilestoneUseCase:
     def __init__(self, milestone_repository: MilestoneRepository) -> None:
         self._milestone_repository = milestone_repository
 
-    def execute(self, input_data: CreateMilestoneInput) -> Result[Milestone, Exception]:
+    async def execute(
+        self, input_data: CreateMilestoneInput
+    ) -> Result[Milestone, Exception]:
         """マイルストーン作成を実行する
 
         Args:
@@ -90,7 +92,7 @@ class CreateMilestoneUseCase:
         )
 
         # 保存
-        save_result = self._milestone_repository.save(milestone)
+        save_result = await self._milestone_repository.save(milestone)
         if save_result.is_err():
             return Err(Exception("Failed to save milestone"))
 
@@ -103,7 +105,9 @@ class UpdateMilestoneUseCase:
     def __init__(self, milestone_repository: MilestoneRepository) -> None:
         self._milestone_repository = milestone_repository
 
-    def execute(self, input_data: UpdateMilestoneInput) -> Result[Milestone, Exception]:
+    async def execute(
+        self, input_data: UpdateMilestoneInput
+    ) -> Result[Milestone, Exception]:
         """マイルストーン更新を実行する
 
         Args:
@@ -114,7 +118,7 @@ class UpdateMilestoneUseCase:
         """
         # マイルストーンを取得
         milestone_id = MilestoneId(value=UUID(input_data.milestone_id))
-        found_result = self._milestone_repository.find_by_id(milestone_id)
+        found_result = await self._milestone_repository.find_by_id(milestone_id)
         if found_result.is_err():
             return Err(Exception("Milestone not found"))
 
@@ -140,7 +144,7 @@ class UpdateMilestoneUseCase:
         updated_milestone = milestone.update(title=title, deadline=deadline)
 
         # 保存
-        save_result = self._milestone_repository.save(updated_milestone)
+        save_result = await self._milestone_repository.save(updated_milestone)
         if save_result.is_err():
             return Err(Exception("Failed to save milestone"))
 
@@ -153,7 +157,7 @@ class GetMilestonesUseCase:
     def __init__(self, milestone_repository: MilestoneRepository) -> None:
         self._milestone_repository = milestone_repository
 
-    def execute(self, user_id: str) -> Result[list[Milestone], Exception]:
+    async def execute(self, user_id: str) -> Result[list[Milestone], Exception]:
         """ユーザーのマイルストーン一覧を取得する
 
         Args:
@@ -163,7 +167,7 @@ class GetMilestonesUseCase:
             成功時はOk(list[Milestone])、失敗時はErr(Exception)
         """
         user_id_obj = UserId(value=UUID(user_id))
-        return self._milestone_repository.find_by_user_id(user_id_obj)
+        return await self._milestone_repository.find_by_user_id(user_id_obj)
 
 
 class DeleteMilestoneUseCase:
@@ -172,7 +176,7 @@ class DeleteMilestoneUseCase:
     def __init__(self, milestone_repository: MilestoneRepository) -> None:
         self._milestone_repository = milestone_repository
 
-    def execute(self, milestone_id: str, user_id: str) -> Result[None, Exception]:
+    async def execute(self, milestone_id: str, user_id: str) -> Result[None, Exception]:
         """マイルストーンを削除する
 
         Args:
@@ -184,7 +188,7 @@ class DeleteMilestoneUseCase:
         """
         # マイルストーンを取得
         milestone_id_obj = MilestoneId(value=UUID(milestone_id))
-        found_result = self._milestone_repository.find_by_id(milestone_id_obj)
+        found_result = await self._milestone_repository.find_by_id(milestone_id_obj)
         if found_result.is_err():
             return Err(Exception("Milestone not found"))
 
@@ -198,4 +202,4 @@ class DeleteMilestoneUseCase:
             )
 
         # 削除
-        return self._milestone_repository.delete(milestone_id_obj)
+        return await self._milestone_repository.delete(milestone_id_obj)

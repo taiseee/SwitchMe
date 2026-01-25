@@ -14,7 +14,7 @@ class MilestoneRepository(Protocol):
     実装はインフラ層で行う。
     """
 
-    def save(self, milestone: Milestone) -> Result[None, Exception]:
+    async def save(self, milestone: Milestone) -> Result[None, Exception]:
         """マイルストーンを保存する
 
         Args:
@@ -25,7 +25,7 @@ class MilestoneRepository(Protocol):
         """
         ...
 
-    def find_by_id(
+    async def find_by_id(
         self, milestone_id: MilestoneId
     ) -> Result[Milestone, EntityNotFoundError]:
         """IDでマイルストーンを検索する
@@ -38,7 +38,9 @@ class MilestoneRepository(Protocol):
         """
         ...
 
-    def find_by_user_id(self, user_id: UserId) -> Result[list[Milestone], Exception]:
+    async def find_by_user_id(
+        self, user_id: UserId
+    ) -> Result[list[Milestone], Exception]:
         """ユーザーIDでマイルストーンを検索する
 
         Args:
@@ -49,7 +51,7 @@ class MilestoneRepository(Protocol):
         """
         ...
 
-    def delete(self, milestone_id: MilestoneId) -> Result[None, Exception]:
+    async def delete(self, milestone_id: MilestoneId) -> Result[None, Exception]:
         """マイルストーンを削除する
 
         Args:
@@ -67,12 +69,12 @@ class InMemoryMilestoneRepository:
     def __init__(self) -> None:
         self._milestones: dict[str, Milestone] = {}
 
-    def save(self, milestone: Milestone) -> Result[None, Exception]:
+    async def save(self, milestone: Milestone) -> Result[None, Exception]:
         """マイルストーンを保存する"""
         self._milestones[str(milestone.id.value)] = milestone
         return Ok(None)
 
-    def find_by_id(
+    async def find_by_id(
         self, milestone_id: MilestoneId
     ) -> Result[Milestone, EntityNotFoundError]:
         """IDでマイルストーンを検索する"""
@@ -81,14 +83,16 @@ class InMemoryMilestoneRepository:
             return Err(EntityNotFoundError("Milestone", str(milestone_id.value)))
         return Ok(milestone)
 
-    def find_by_user_id(self, user_id: UserId) -> Result[list[Milestone], Exception]:
+    async def find_by_user_id(
+        self, user_id: UserId
+    ) -> Result[list[Milestone], Exception]:
         """ユーザーIDでマイルストーンを検索する"""
         milestones = [
             m for m in self._milestones.values() if m.user_id.value == user_id.value
         ]
         return Ok(milestones)
 
-    def delete(self, milestone_id: MilestoneId) -> Result[None, Exception]:
+    async def delete(self, milestone_id: MilestoneId) -> Result[None, Exception]:
         """マイルストーンを削除する"""
         milestone_id_str = str(milestone_id.value)
         if milestone_id_str not in self._milestones:

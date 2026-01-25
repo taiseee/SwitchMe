@@ -18,7 +18,7 @@ class GoogleLoginUseCase:
         """
         self.oauth_client = oauth_client
 
-    def execute(self, state: str) -> str:
+    async def execute(self, state: str) -> str:
         """認可URLを生成する
 
         Args:
@@ -49,7 +49,7 @@ class GoogleCallbackUseCase:
         self.user_repository = user_repository
         self.token_manager = token_manager
 
-    def execute(self, code: str) -> Result[dict[str, str], str]:
+    async def execute(self, code: str) -> Result[dict[str, str], str]:
         """認可コードからユーザー情報を取得し、トークンを生成する
 
         Args:
@@ -68,7 +68,7 @@ class GoogleCallbackUseCase:
 
         # 2. ユーザーをDBから検索または作成
         oauth_provider = OAuthProvider(value="google")
-        existing_user_result = self.user_repository.find_by_oauth(
+        existing_user_result = await self.user_repository.find_by_oauth(
             oauth_provider, user_info.google_user_id
         )
 
@@ -81,7 +81,7 @@ class GoogleCallbackUseCase:
                 oauth_provider=oauth_provider,
                 oauth_user_id=user_info.google_user_id,
             )
-            save_result = self.user_repository.save(user)
+            save_result = await self.user_repository.save(user)
             if save_result.is_err():
                 return Err("Failed to save user")
 
@@ -106,7 +106,7 @@ class GetCurrentUserUseCase:
         self.token_manager = token_manager
         self.user_repository = user_repository
 
-    def execute(self, access_token: str) -> Result[User, str]:
+    async def execute(self, access_token: str) -> Result[User, str]:
         """アクセストークンから現在のユーザーを取得する
 
         Args:
@@ -124,7 +124,7 @@ class GetCurrentUserUseCase:
 
         # 2. ユーザー取得
         user_id = UserId(value=UUID(payload.user_id))
-        user_result = self.user_repository.find_by_id(user_id)
+        user_result = await self.user_repository.find_by_id(user_id)
         if user_result.is_err():
             return Err("User not found")
 
@@ -134,7 +134,7 @@ class GetCurrentUserUseCase:
 class LogoutUseCase:
     """ログアウトユースケース"""
 
-    def execute(self) -> Result[None, str]:
+    async def execute(self) -> Result[None, str]:
         """ログアウトする
 
         現時点ではトークンの無効化は実装せず、

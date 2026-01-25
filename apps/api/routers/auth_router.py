@@ -29,7 +29,7 @@ class UserResponse(BaseModel):
 
 
 @router.get("/google/login")
-def google_login(
+async def google_login(
     google_login_use_case: GoogleLoginUseCase = Depends(get_google_login_use_case),
 ):
     """Google OAuth2ログイン
@@ -40,12 +40,12 @@ def google_login(
         Google認証ページへのリダイレクト
     """
     state = secrets.token_urlsafe(32)
-    authorization_url = google_login_use_case.execute(state)
+    authorization_url = await google_login_use_case.execute(state)
     return RedirectResponse(url=authorization_url)
 
 
 @router.get("/google/callback")
-def google_callback(
+async def google_callback(
     code: str,
     response: Response,
     google_callback_use_case: GoogleCallbackUseCase = Depends(
@@ -66,7 +66,7 @@ def google_callback(
     Raises:
         HTTPException: 認証エラー
     """
-    result = google_callback_use_case.execute(code)
+    result = await google_callback_use_case.execute(code)
 
     if result.is_err():
         raise HTTPException(status_code=400, detail=result.unwrap_err())
@@ -95,7 +95,7 @@ def google_callback(
 
 
 @router.get("/me", response_model=UserResponse)
-def get_current_user_info(
+async def get_current_user_info(
     current_user: User = Depends(get_current_user),
 ):
     """現在のユーザー情報を取得
@@ -114,7 +114,7 @@ def get_current_user_info(
 
 
 @router.post("/logout")
-def logout(
+async def logout(
     response: Response,
     logout_use_case: LogoutUseCase = Depends(get_logout_use_case),
 ):
@@ -128,7 +128,7 @@ def logout(
     Returns:
         成功メッセージ
     """
-    result = logout_use_case.execute()
+    result = await logout_use_case.execute()
 
     if result.is_err():
         raise HTTPException(status_code=400, detail=result.unwrap_err())

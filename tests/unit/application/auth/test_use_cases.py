@@ -17,13 +17,14 @@ from application.auth.use_cases import (
 class TestGoogleLoginUseCase:
     """GoogleLoginUseCaseのテスト"""
 
-    def test_認可URLを生成できること(self):
+    @pytest.mark.anyio
+    async def test_認可URLを生成できること(self):
         """認可URLを生成できること"""
         oauth_client = MockGoogleOAuthClient()
         use_case = GoogleLoginUseCase(oauth_client)
 
         state = "test_state_123"
-        url = use_case.execute(state)
+        url = await use_case.execute(state)
 
         assert isinstance(url, str)
         assert "https://accounts.google.com/o/oauth2/v2/auth" in url
@@ -53,13 +54,14 @@ class TestGoogleCallbackUseCase:
         """テスト用のGoogleCallbackUseCase"""
         return GoogleCallbackUseCase(oauth_client, user_repository, token_manager)
 
-    def test_新規ユーザーの場合はユーザーを作成してトークンを返すこと(
+    @pytest.mark.anyio
+    async def test_新規ユーザーの場合はユーザーを作成してトークンを返すこと(
         self, use_case, user_repository
     ):
         """新規ユーザーの場合はユーザーを作成してトークンを返すこと"""
         code = "valid_code"
 
-        result = use_case.execute(code)
+        result = await use_case.execute(code)
 
         assert result.is_ok()
         tokens = result.unwrap()
@@ -69,12 +71,15 @@ class TestGoogleCallbackUseCase:
         assert isinstance(tokens["refresh_token"], str)
 
         # ユーザーが作成されていることを確認
-        user_result = user_repository.find_by_oauth(
+        user_result = await user_repository.find_by_oauth(
             OAuthProvider(value="google"), "mock_google_user_123"
         )
         assert user_result.is_ok()
 
-    def test_既存ユーザーの場合はトークンを返すこと(self, use_case, user_repository):
+    @pytest.mark.anyio
+    async def test_既存ユーザーの場合はトークンを返すこと(
+        self, use_case, user_repository
+    ):
         """既存ユーザーの場合はトークンを返すこと"""
         # 事前にユーザーを作成
         existing_user = User.create(
@@ -82,21 +87,22 @@ class TestGoogleCallbackUseCase:
             oauth_provider=OAuthProvider(value="google"),
             oauth_user_id="mock_google_user_123",
         )
-        user_repository.save(existing_user)
+        await user_repository.save(existing_user)
 
         code = "valid_code"
-        result = use_case.execute(code)
+        result = await use_case.execute(code)
 
         assert result.is_ok()
         tokens = result.unwrap()
         assert "access_token" in tokens
         assert "refresh_token" in tokens
 
-    def test_不正なコードの場合はエラーを返すこと(self, use_case):
+    @pytest.mark.anyio
+    async def test_不正なコードの場合はエラーを返すこと(self, use_case):
         """不正なコードの場合はエラーを返すこと"""
         code = "invalid_code"
 
-        result = use_case.execute(code)
+        result = await use_case.execute(code)
 
         assert result.is_err()
         assert "Invalid authorization code" in result.unwrap_err()
@@ -120,7 +126,8 @@ class TestGetCurrentUserUseCase:
         """テスト用のGetCurrentUserUseCase"""
         return GetCurrentUserUseCase(token_manager, user_repository)
 
-    def test_有効なトークンでユーザーを取得できること(
+    @pytest.mark.anyio
+    async def test_有効なトークンでユーザーを取得できること(
         self, use_case, token_manager, user_repository
     ):
         """有効なトークンでユーザーを取得できること"""
@@ -130,7 +137,7 @@ class TestGetCurrentUserUseCase:
             oauth_provider=OAuthProvider(value="google"),
             oauth_user_id="google_user_123",
         )
-        user_repository.save(user)
+        await user_repository.save(user)
 
         # トークンを生成
         access_token = token_manager.create_access_token(
@@ -138,23 +145,25 @@ class TestGetCurrentUserUseCase:
         )
 
         # ユーザーを取得
-        result = use_case.execute(access_token)
+        result = await use_case.execute(access_token)
 
         assert result.is_ok()
         retrieved_user = result.unwrap()
         assert retrieved_user.id == user.id
         assert retrieved_user.email == user.email
 
-    def test_不正なトークンの場合はエラーを返すこと(self, use_case):
+    @pytest.mark.anyio
+    async def test_不正なトークンの場合はエラーを返すこと(self, use_case):
         """不正なトークンの場合はエラーを返すこと"""
         invalid_token = "invalid.token.value"
 
-        result = use_case.execute(invalid_token)
+        result = await use_case.execute(invalid_token)
 
         assert result.is_err()
         assert "Invalid token" in result.unwrap_err()
 
-    def test_存在しないユーザーのトークンの場合はエラーを返すこと(
+    @pytest.mark.anyio
+    async def test_存在しないユーザーのトークンの場合はエラーを返すこと(
         self, use_case, token_manager
     ):
         """存在しないユーザーのトークンの場合はエラーを返すこと"""
@@ -164,7 +173,7 @@ class TestGetCurrentUserUseCase:
             non_existent_user_id, "nonexistent@example.com"
         )
 
-        result = use_case.execute(access_token)
+        result = await use_case.execute(access_token)
 
         assert result.is_err()
         assert "User not found" in result.unwrap_err()
@@ -173,11 +182,12 @@ class TestGetCurrentUserUseCase:
 class TestLogoutUseCase:
     """LogoutUseCaseのテスト"""
 
-    def test_ログアウトできること(self):
+    @pytest.mark.anyio
+    async def test_ログアウトできること(self):
         """ログアウトできること（現時点ではcookie削除のみ）"""
         use_case = LogoutUseCase()
 
-        result = use_case.execute()
+        result = await use_case.execute()
 
         assert result.is_ok()
         assert result.unwrap() is None

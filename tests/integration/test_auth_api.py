@@ -1,11 +1,10 @@
 """認証API統合テスト"""
 
-from fastapi.testclient import TestClient
+import pytest
+from httpx import AsyncClient, ASGITransport
 from apps.api.main import app
 from domain.user.models import User, Email, OAuthProvider
 from apps.api.dependencies import _user_repository, _token_manager
-
-client = TestClient(app)
 
 
 class TestAuthAPI:
@@ -16,9 +15,16 @@ class TestAuthAPI:
         # リポジトリをクリア
         _user_repository._users.clear()
 
-    def test_Google認可URLにリダイレクトできること(self):
+    @pytest.mark.anyio
+    @pytest.mark.anyio
+    async def test_Google認可URLにリダイレクトできること(self):
         """GET /api/v1/auth/google/loginでGoogle認可URLにリダイレクトできること"""
-        response = client.get("/api/v1/auth/google/login", follow_redirects=False)
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/api/v1/auth/google/login", follow_redirects=False
+            )
 
         assert response.status_code == 307  # RedirectResponse
         assert "location" in response.headers
@@ -27,11 +33,16 @@ class TestAuthAPI:
             in response.headers["location"]
         )
 
-    def test_正しいコードでコールバックが成功すること(self):
+    @pytest.mark.anyio
+    async def test_正しいコードでコールバックが成功すること(self):
         """GET /api/v1/auth/google/callbackで正しいコードで認証が成功すること"""
-        response = client.get(
-            "/api/v1/auth/google/callback?code=valid_code", follow_redirects=False
-        )
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/api/v1/auth/google/callback?code=valid_code",
+                follow_redirects=False,
+            )
 
         assert response.status_code == 307  # RedirectResponse
         assert response.headers["location"] == "/dashboard"
@@ -42,14 +53,21 @@ class TestAuthAPI:
         # 実際の動作確認は手動テストで行う
         assert response.status_code == 307
 
-    def test_不正なコードでコールバックが失敗すること(self):
+    @pytest.mark.anyio
+    async def test_不正なコードでコールバックが失敗すること(self):
         """GET /api/v1/auth/google/callbackで不正なコードで認証が失敗すること"""
-        response = client.get("/api/v1/auth/google/callback?code=invalid_code")
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/api/v1/auth/google/callback?code=invalid_code"
+            )
 
         assert response.status_code == 400
         assert "Invalid authorization code" in response.json()["detail"]
 
-    def test_認証済みユーザーの情報を取得できること(self):
+    @pytest.mark.anyio
+    async def test_認証済みユーザーの情報を取得できること(self):
         """GET /api/v1/auth/meで認証済みユーザーの情報を取得できること"""
         # ユーザーを作成して保存
         user = User.create(
@@ -57,7 +75,7 @@ class TestAuthAPI:
             oauth_provider=OAuthProvider(value="google"),
             oauth_user_id="google_user_123",
         )
-        _user_repository.save(user)
+        await _user_repository.save(user)
 
         # アクセストークンを生成
         access_token = _token_manager.create_access_token(
@@ -65,7 +83,12 @@ class TestAuthAPI:
         )
 
         # ユーザー情報を取得
-        response = client.get("/api/v1/auth/me", cookies={"access_token": access_token})
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/api/v1/auth/me", cookies={"access_token": access_token}
+            )
 
         assert response.status_code == 200
         data = response.json()
@@ -73,23 +96,32 @@ class TestAuthAPI:
         assert data["email"] == user.email.value
         assert data["status"] == user.status.status
 
-    def test_未認証ユーザーは401エラーになること(self):
+    @pytest.mark.anyio
+    async def test_未認証ユーザーは401エラーになること(self):
         """GET /api/v1/auth/meで未認証ユーザーは401エラーになること"""
-        response = client.get("/api/v1/auth/me")
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/api/v1/auth/me")
 
         assert response.status_code == 401
         assert "Not authenticated" in response.json()["detail"]
 
-    def test_不正なトークンは401エラーになること(self):
+    @pytest.mark.anyio
+    async def test_不正なトークンは401エラーになること(self):
         """GET /api/v1/auth/meで不正なトークンは401エラーになること"""
-        response = client.get(
-            "/api/v1/auth/me", cookies={"access_token": "invalid.token.value"}
-        )
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/api/v1/auth/me", cookies={"access_token": "invalid.token.value"}
+            )
 
         assert response.status_code == 401
         assert "Invalid token" in response.json()["detail"]
 
-    def test_ログアウトできること(self):
+    @pytest.mark.anyio
+    async def test_ログアウトできること(self):
         """POST /api/v1/auth/logoutでログアウトできること"""
         # ユーザーを作成して保存
         user = User.create(
@@ -97,7 +129,7 @@ class TestAuthAPI:
             oauth_provider=OAuthProvider(value="google"),
             oauth_user_id="google_user_123",
         )
-        _user_repository.save(user)
+        await _user_repository.save(user)
 
         # アクセストークンを生成
         access_token = _token_manager.create_access_token(
@@ -105,9 +137,12 @@ class TestAuthAPI:
         )
 
         # ログアウト
-        response = client.post(
-            "/api/v1/auth/logout", cookies={"access_token": access_token}
-        )
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.post(
+                "/api/v1/auth/logout", cookies={"access_token": access_token}
+            )
 
         assert response.status_code == 200
         assert response.json()["message"] == "Logged out successfully"

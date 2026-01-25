@@ -80,7 +80,7 @@ def _milestone_to_response(milestone: Milestone) -> MilestoneResponse:
 
 
 @router.post("", response_model=MilestoneResponse, status_code=status.HTTP_201_CREATED)
-def create_milestone(
+async def create_milestone(
     request: CreateMilestoneRequest,
     current_user: User = Depends(get_current_user),
     milestone_repository=Depends(get_milestone_repository),
@@ -110,7 +110,7 @@ def create_milestone(
         penalty_description=request.penalty_description,
     )
 
-    result = use_case.execute(input_data)
+    result = await use_case.execute(input_data)
 
     if result.is_err():
         raise HTTPException(
@@ -122,7 +122,7 @@ def create_milestone(
 
 
 @router.get("", response_model=list[MilestoneResponse])
-def get_milestones(
+async def get_milestones(
     current_user: User = Depends(get_current_user),
     milestone_repository=Depends(get_milestone_repository),
 ):
@@ -136,7 +136,7 @@ def get_milestones(
     """
     use_case = GetMilestonesUseCase(milestone_repository)
 
-    result = use_case.execute(str(current_user.id.value))
+    result = await use_case.execute(str(current_user.id.value))
 
     if result.is_err():
         raise HTTPException(
@@ -148,7 +148,7 @@ def get_milestones(
 
 
 @router.put("/{milestone_id}", response_model=MilestoneResponse)
-def update_milestone(
+async def update_milestone(
     milestone_id: str,
     request: UpdateMilestoneRequest,
     current_user: User = Depends(get_current_user),
@@ -175,7 +175,7 @@ def update_milestone(
         timezone=request.timezone,
     )
 
-    result = use_case.execute(input_data)
+    result = await use_case.execute(input_data)
 
     if result.is_err():
         error = result.unwrap_err()
@@ -190,7 +190,7 @@ def update_milestone(
 
 
 @router.delete("/{milestone_id}")
-def delete_milestone(
+async def delete_milestone(
     milestone_id: str,
     current_user: User = Depends(get_current_user),
     milestone_repository=Depends(get_milestone_repository),
@@ -206,7 +206,7 @@ def delete_milestone(
     """
     use_case = DeleteMilestoneUseCase(milestone_repository)
 
-    result = use_case.execute(milestone_id, str(current_user.id.value))
+    result = await use_case.execute(milestone_id, str(current_user.id.value))
 
     if result.is_err():
         error = result.unwrap_err()

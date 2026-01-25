@@ -37,7 +37,8 @@ def user_id():
 class TestCreateMilestoneUseCase:
     """CreateMilestoneUseCaseのテスト"""
 
-    def test_マイルストーン作成が成功すること(self, repository, user_id):
+    @pytest.mark.anyio
+    async def test_マイルストーン作成が成功すること(self, repository, user_id):
         """マイルストーン作成が成功すること"""
         use_case = CreateMilestoneUseCase(milestone_repository=repository)
 
@@ -55,7 +56,7 @@ class TestCreateMilestoneUseCase:
             penalty_description="朝のジム未達成",
         )
 
-        result = use_case.execute(input_data)
+        result = await use_case.execute(input_data)
 
         assert result.is_ok()
         milestone = result.unwrap()
@@ -65,14 +66,15 @@ class TestCreateMilestoneUseCase:
         assert milestone.penalty.amount.amount == 1000
 
         # リポジトリに保存されていることを確認
-        found_result = repository.find_by_id(milestone.id)
+        found_result = await repository.find_by_id(milestone.id)
         assert found_result.is_ok()
 
 
 class TestUpdateMilestoneUseCase:
     """UpdateMilestoneUseCaseのテスト"""
 
-    def test_マイルストーン更新が成功すること(self, repository, user_id):
+    @pytest.mark.anyio
+    async def test_マイルストーン更新が成功すること(self, repository, user_id):
         """マイルストーン更新が成功すること"""
         # 既存のマイルストーンを作成
         milestone = Milestone.create(
@@ -93,7 +95,7 @@ class TestUpdateMilestoneUseCase:
                 description="",
             ),
         )
-        repository.save(milestone)
+        await repository.save(milestone)
 
         # 更新ユースケース
         use_case = UpdateMilestoneUseCase(milestone_repository=repository)
@@ -104,13 +106,16 @@ class TestUpdateMilestoneUseCase:
             title="朝のランニング",
         )
 
-        result = use_case.execute(input_data)
+        result = await use_case.execute(input_data)
 
         assert result.is_ok()
         updated_milestone = result.unwrap()
         assert updated_milestone.title.value == "朝のランニング"
 
-    def test_他のユーザーのマイルストーン更新は失敗すること(self, repository, user_id):
+    @pytest.mark.anyio
+    async def test_他のユーザーのマイルストーン更新は失敗すること(
+        self, repository, user_id
+    ):
         """他のユーザーのマイルストーン更新は失敗すること（認可チェック）"""
         # 別のユーザーのマイルストーンを作成
         other_user_id = UserId(value=uuid4())
@@ -132,7 +137,7 @@ class TestUpdateMilestoneUseCase:
                 description="",
             ),
         )
-        repository.save(milestone)
+        await repository.save(milestone)
 
         # 別のユーザーで更新を試みる
         use_case = UpdateMilestoneUseCase(milestone_repository=repository)
@@ -143,14 +148,17 @@ class TestUpdateMilestoneUseCase:
             title="不正な更新",
         )
 
-        result = use_case.execute(input_data)
+        result = await use_case.execute(input_data)
         assert result.is_err()
 
 
 class TestGetMilestonesUseCase:
     """GetMilestonesUseCaseのテスト"""
 
-    def test_ユーザーのマイルストーン一覧を取得できること(self, repository, user_id):
+    @pytest.mark.anyio
+    async def test_ユーザーのマイルストーン一覧を取得できること(
+        self, repository, user_id
+    ):
         """ユーザーのマイルストーン一覧を取得できること"""
         # 複数のマイルストーンを作成
         milestone1 = Milestone.create(
@@ -189,12 +197,12 @@ class TestGetMilestonesUseCase:
                 description="",
             ),
         )
-        repository.save(milestone1)
-        repository.save(milestone2)
+        await repository.save(milestone1)
+        await repository.save(milestone2)
 
         # 一覧取得
         use_case = GetMilestonesUseCase(milestone_repository=repository)
-        result = use_case.execute(str(user_id.value))
+        result = await use_case.execute(str(user_id.value))
 
         assert result.is_ok()
         milestones = result.unwrap()
@@ -204,7 +212,8 @@ class TestGetMilestonesUseCase:
 class TestDeleteMilestoneUseCase:
     """DeleteMilestoneUseCaseのテスト"""
 
-    def test_マイルストーン削除が成功すること(self, repository, user_id):
+    @pytest.mark.anyio
+    async def test_マイルストーン削除が成功すること(self, repository, user_id):
         """マイルストーン削除が成功すること"""
         # マイルストーンを作成
         milestone = Milestone.create(
@@ -225,11 +234,11 @@ class TestDeleteMilestoneUseCase:
                 description="",
             ),
         )
-        repository.save(milestone)
+        await repository.save(milestone)
 
         # 削除
         use_case = DeleteMilestoneUseCase(milestone_repository=repository)
-        result = use_case.execute(
+        result = await use_case.execute(
             milestone_id=str(milestone.id.value),
             user_id=str(user_id.value),
         )
@@ -237,10 +246,13 @@ class TestDeleteMilestoneUseCase:
         assert result.is_ok()
 
         # 削除後は取得できない
-        found_result = repository.find_by_id(milestone.id)
+        found_result = await repository.find_by_id(milestone.id)
         assert found_result.is_err()
 
-    def test_他のユーザーのマイルストーン削除は失敗すること(self, repository, user_id):
+    @pytest.mark.anyio
+    async def test_他のユーザーのマイルストーン削除は失敗すること(
+        self, repository, user_id
+    ):
         """他のユーザーのマイルストーン削除は失敗すること（認可チェック）"""
         # 別のユーザーのマイルストーンを作成
         other_user_id = UserId(value=uuid4())
@@ -262,11 +274,11 @@ class TestDeleteMilestoneUseCase:
                 description="",
             ),
         )
-        repository.save(milestone)
+        await repository.save(milestone)
 
         # 別のユーザーで削除を試みる
         use_case = DeleteMilestoneUseCase(milestone_repository=repository)
-        result = use_case.execute(
+        result = await use_case.execute(
             milestone_id=str(milestone.id.value),
             user_id=str(user_id.value),  # 異なるユーザーID
         )

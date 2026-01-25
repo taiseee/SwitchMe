@@ -13,7 +13,7 @@ class UserRepository(Protocol):
     実装はインフラ層で行う。
     """
 
-    def save(self, user: User) -> Result[None, Exception]:
+    async def save(self, user: User) -> Result[None, Exception]:
         """ユーザーを保存する
 
         Args:
@@ -24,7 +24,7 @@ class UserRepository(Protocol):
         """
         ...
 
-    def find_by_id(self, user_id: UserId) -> Result[User, EntityNotFoundError]:
+    async def find_by_id(self, user_id: UserId) -> Result[User, EntityNotFoundError]:
         """IDでユーザーを検索する
 
         Args:
@@ -35,7 +35,7 @@ class UserRepository(Protocol):
         """
         ...
 
-    def find_by_email(self, email: Email) -> Result[User, EntityNotFoundError]:
+    async def find_by_email(self, email: Email) -> Result[User, EntityNotFoundError]:
         """メールアドレスでユーザーを検索する
 
         Args:
@@ -46,7 +46,7 @@ class UserRepository(Protocol):
         """
         ...
 
-    def find_by_oauth(
+    async def find_by_oauth(
         self, oauth_provider: OAuthProvider, oauth_user_id: str
     ) -> Result[User, EntityNotFoundError]:
         """OAuthプロバイダーとユーザーIDでユーザーを検索する
@@ -60,7 +60,7 @@ class UserRepository(Protocol):
         """
         ...
 
-    def delete(self, user_id: UserId) -> Result[None, Exception]:
+    async def delete(self, user_id: UserId) -> Result[None, Exception]:
         """ユーザーを削除する
 
         Args:
@@ -78,26 +78,26 @@ class InMemoryUserRepository:
     def __init__(self) -> None:
         self._users: dict[str, User] = {}
 
-    def save(self, user: User) -> Result[None, Exception]:
+    async def save(self, user: User) -> Result[None, Exception]:
         """ユーザーを保存する"""
         self._users[str(user.id.value)] = user
         return Ok(None)
 
-    def find_by_id(self, user_id: UserId) -> Result[User, EntityNotFoundError]:
+    async def find_by_id(self, user_id: UserId) -> Result[User, EntityNotFoundError]:
         """IDでユーザーを検索する"""
         user = self._users.get(str(user_id.value))
         if user is None:
             return Err(EntityNotFoundError("User", str(user_id.value)))
         return Ok(user)
 
-    def find_by_email(self, email: Email) -> Result[User, EntityNotFoundError]:
+    async def find_by_email(self, email: Email) -> Result[User, EntityNotFoundError]:
         """メールアドレスでユーザーを検索する"""
         for user in self._users.values():
             if user.email.value == email.value:
                 return Ok(user)
         return Err(EntityNotFoundError("User", email.value))
 
-    def find_by_oauth(
+    async def find_by_oauth(
         self, oauth_provider: OAuthProvider, oauth_user_id: str
     ) -> Result[User, EntityNotFoundError]:
         """OAuthプロバイダーとユーザーIDでユーザーを検索する"""
@@ -111,7 +111,7 @@ class InMemoryUserRepository:
             EntityNotFoundError("User", f"{oauth_provider.value}:{oauth_user_id}")
         )
 
-    def delete(self, user_id: UserId) -> Result[None, Exception]:
+    async def delete(self, user_id: UserId) -> Result[None, Exception]:
         """ユーザーを削除する"""
         user_id_str = str(user_id.value)
         if user_id_str not in self._users:

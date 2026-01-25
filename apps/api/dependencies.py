@@ -65,7 +65,7 @@ def get_logout_use_case():
     return LogoutUseCase()
 
 
-def get_current_user(
+async def get_current_user(
     access_token: str | None = Cookie(None),
 ) -> User:
     """現在のユーザーを取得（認証middleware）
@@ -83,7 +83,7 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     use_case = get_get_current_user_use_case()
-    result = use_case.execute(access_token)
+    result = await use_case.execute(access_token)
 
     if result.is_err():
         raise HTTPException(status_code=401, detail=result.unwrap_err())
