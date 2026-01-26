@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from domain.user.models import User, UserId, Email
+from domain.user.models import User, UserId, Email, OAuthProvider
 from infrastructure.shared.models import UserModel
 from infrastructure.user.persistence.mappers import user_to_orm, orm_to_user
 from infrastructure.shared.result import Ok, Err, Result
@@ -69,18 +69,20 @@ class PostgresUserRepository:
         return Ok(orm_to_user(model))
 
     async def find_by_oauth(
-        self, oauth_provider: str, oauth_user_id: str
+        self, oauth_provider: OAuthProvider, oauth_user_id: str
     ) -> Result[User, EntityNotFoundError]:
         """OAuthプロバイダーとユーザーIDでユーザーを検索"""
         stmt = select(UserModel).where(
-            UserModel.oauth_provider == oauth_provider,
+            UserModel.oauth_provider == oauth_provider.value,
             UserModel.oauth_user_id == oauth_user_id,
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if model is None:
-            return Err(EntityNotFoundError("User", f"{oauth_provider}:{oauth_user_id}"))
+            return Err(
+                EntityNotFoundError("User", f"{oauth_provider.value}:{oauth_user_id}")
+            )
 
         return Ok(orm_to_user(model))
 

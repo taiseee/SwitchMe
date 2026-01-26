@@ -14,6 +14,21 @@ _engine: AsyncEngine | None = None
 _session_maker: async_sessionmaker[AsyncSession] | None = None
 
 
+async def reset_engine() -> None:
+    """エンジンとセッションメーカーをリセットする（テスト用）
+
+    既存のエンジンを破棄し、次回のget_engine()呼び出し時に
+    新しいエンジンが作成されるようにする。
+    """
+    global _engine, _session_maker
+
+    if _engine is not None:
+        await _engine.dispose()
+        _engine = None
+
+    _session_maker = None
+
+
 def get_database_url() -> str:
     """データベース接続URLを構築する
 
