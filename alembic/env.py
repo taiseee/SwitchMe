@@ -8,16 +8,18 @@ from alembic import context
 
 # Import models for autogenerate support
 from infrastructure.shared.models import Base
+from infrastructure.shared.database import get_database_url
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
 # Override sqlalchemy.url from environment variable if available
-database_url = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://switchme_user:switchme_password@localhost:5432/switchme_dev",
-)
+database_url = os.getenv("DATABASE_URL", None)
+if not database_url:
+    # Use get_database_url() to construct URL from environment variables
+    database_url = get_database_url()
+
 config.set_main_option("sqlalchemy.url", database_url.replace("+asyncpg", ""))
 
 # Interpret the config file for Python logging.

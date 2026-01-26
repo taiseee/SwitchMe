@@ -9,6 +9,7 @@ from sqlalchemy import (
     Float,
     JSON,
     ForeignKey,
+    Boolean,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
@@ -86,3 +87,76 @@ class MilestoneModel(Base):
     )
 
     user = relationship("UserModel", back_populates="milestones")
+    verifications = relationship(
+        "VerificationModel", back_populates="milestone", cascade="all, delete-orphan"
+    )
+
+
+class VerificationModel(Base):
+    """Verification ORM model"""
+
+    __tablename__ = "verifications"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    milestone_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("milestones.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status = Column(String, nullable=False)
+
+    # Verification result (nullable until completed)
+    result_success = Column(Boolean, nullable=True)
+    result_score = Column(Float, nullable=True)
+    result_confidence = Column(Float, nullable=True)
+    result_evidence = Column(JSON, nullable=True)
+
+    started_at = Column(DateTime(timezone=True), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    milestone = relationship("MilestoneModel", back_populates="verifications")
+    user = relationship("UserModel")
+    sensor_data = relationship(
+        "SensorDataModel", back_populates="verification", cascade="all, delete-orphan"
+    )
+
+
+class SensorDataModel(Base):
+    """Sensor Data ORM model"""
+
+    __tablename__ = "sensor_data"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    verification_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("verifications.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    accuracy = Column(Float, nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False)
+
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+    verification = relationship("VerificationModel", back_populates="sensor_data")
