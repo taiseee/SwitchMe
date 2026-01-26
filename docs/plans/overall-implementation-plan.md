@@ -234,7 +234,7 @@ git commit -m "feat: Userドメインモデルを実装"
 
 **RED: テスト作成**
 - ファイル: `tests/unit/domain/user/test_repositories.py`
-- テスト内容（インメモリ実装を使用）:
+- テスト内容（Mockを使用）:
   - ユーザーを保存して取得できること
   - メールアドレスでユーザーを検索できること
   - 存在しないユーザーの検索はErrを返すこと
@@ -247,12 +247,11 @@ git commit -m "feat: Userドメインモデルを実装"
     - `find_by_id(user_id: UserId) -> Result[User, EntityNotFoundError]`
     - `find_by_email(email: Email) -> Result[User, EntityNotFoundError]`
     - `delete(user_id: UserId) -> Result[None, Exception]`
-  - `InMemoryUserRepository`: テスト用インメモリ実装
 
 **コミット:**
 ```bash
 git add tests/unit/domain/user/test_repositories.py domain/user/repositories.py
-git commit -m "feat: Userリポジトリインターフェースとインメモリ実装"
+git commit -m "feat: Userリポジトリインターフェースを実装"
 ```
 
 ---
@@ -276,7 +275,6 @@ git commit -m "feat: Userリポジトリインターフェースとインメモ�
 - ファイル: `infrastructure/user/adapters/password_hasher.py`
   - `PasswordHasher` (Protocol): パスワードハッシュ化インターフェース
   - `BcryptPasswordHasher`: Bcryptを使用した実装
-  - `InMemoryPasswordHasher`: テスト用実装
 
 **コミット:**
 ```bash
