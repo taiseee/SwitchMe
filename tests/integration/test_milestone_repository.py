@@ -6,7 +6,11 @@ from uuid import uuid4
 from datetime import date, time
 
 from domain.milestone.models import Milestone, MilestoneId, Title
-from domain.milestone.value_objects import DeadlineInfo, VerificationCriteria, PenaltyInfo
+from domain.milestone.value_objects import (
+    DeadlineInfo,
+    VerificationCriteria,
+    PenaltyInfo,
+)
 from domain.user.models import User, UserId, Email, OAuthProvider
 from domain.shared.value_objects import Money
 from infrastructure.milestone.persistence.repository import PostgresMilestoneRepository
@@ -64,7 +68,7 @@ async def test_マイルストーンを保存して取得できること(db_sess
     )
     user_save_result = await user_repository.save(user)
     assert user_save_result.is_ok()
-    
+
     repository = PostgresMilestoneRepository(db_session)
     user_id = user.id
     milestone = Milestone.create(
@@ -116,7 +120,7 @@ async def test_ユーザーIDでマイルストーンを検索できること(db
     )
     user_save_result = await user_repository.save(user)
     assert user_save_result.is_ok()
-    
+
     repository = PostgresMilestoneRepository(db_session)
     user_id = user.id
     milestone1 = Milestone.create(
@@ -168,7 +172,9 @@ async def test_ユーザーIDでマイルストーンを検索できること(db
 
 
 @pytest.mark.anyio
-async def test_存在しないマイルストーンのid検索はEntityNotFoundErrorを返すこと(db_session):
+async def test_存在しないマイルストーンのid検索はEntityNotFoundErrorを返すこと(
+    db_session,
+):
     """Given: 存在しないマイルストーンID
     When: ID検索
     Then: EntityNotFoundErrorを返す"""
@@ -184,7 +190,9 @@ async def test_存在しないマイルストーンのid検索はEntityNotFoundE
 
 
 @pytest.mark.anyio
-async def test_マイルストーンが存在しないユーザーIDの検索は空リストを返すこと(db_session):
+async def test_マイルストーンが存在しないユーザーIDの検索は空リストを返すこと(
+    db_session,
+):
     """Given: マイルストーンが存在しないユーザーID
     When: ユーザーID検索
     Then: 空リストを返す"""
@@ -215,7 +223,7 @@ async def test_マイルストーンを削除できること(db_session):
     )
     user_save_result = await user_repository.save(user)
     assert user_save_result.is_ok()
-    
+
     repository = PostgresMilestoneRepository(db_session)
     user_id = user.id
     milestone = Milestone.create(
@@ -261,7 +269,7 @@ async def test_マイルストーンを更新できること(db_session):
     )
     user_save_result = await user_repository.save(user)
     assert user_save_result.is_ok()
-    
+
     repository = PostgresMilestoneRepository(db_session)
     user_id = user.id
     milestone = Milestone.create(

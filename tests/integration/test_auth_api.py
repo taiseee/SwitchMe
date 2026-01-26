@@ -4,16 +4,31 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from apps.api.main import app
 from domain.user.models import User, Email, OAuthProvider
-from apps.api.dependencies import _user_repository, _token_manager
+from apps.api.dependencies import _token_manager
+from infrastructure.shared.database import get_session_maker
+from infrastructure.user.persistence.repository import PostgresUserRepository
 
 
 class TestAuthAPI:
     """認証APIの統合テスト"""
 
-    def setup_method(self):
-        """各テストメソッドの前に実行"""
-        # リポジトリをクリア
-        _user_repository._users.clear()
+    async def _create_and_save_user(
+        self, email: str = "test@example.com", oauth_user_id: str = "google_user_123"
+    ) -> User:
+        """ユーザーを作成してデータベースに保存"""
+        user = User.create(
+            email=Email(value=email),
+            oauth_provider=OAuthProvider(value="google"),
+            oauth_user_id=oauth_user_id,
+        )
+
+        # セッションとリポジトリを取得してユーザーを保存
+        session_maker = get_session_maker()
+        async with session_maker() as session:
+            repository = PostgresUserRepository(session)
+            await repository.save(user)
+
+        return user
 
     @pytest.mark.anyio
     @pytest.mark.anyio
@@ -70,12 +85,7 @@ class TestAuthAPI:
     async def test_認証済みユーザーの情報を取得できること(self):
         """GET /api/v1/auth/meで認証済みユーザーの情報を取得できること"""
         # ユーザーを作成して保存
-        user = User.create(
-            email=Email(value="test@example.com"),
-            oauth_provider=OAuthProvider(value="google"),
-            oauth_user_id="google_user_123",
-        )
-        await _user_repository.save(user)
+        user = await self._create_and_save_user()
 
         # アクセストークンを生成
         access_token = _token_manager.create_access_token(
@@ -124,12 +134,7 @@ class TestAuthAPI:
     async def test_ログアウトできること(self):
         """POST /api/v1/auth/logoutでログアウトできること"""
         # ユーザーを作成して保存
-        user = User.create(
-            email=Email(value="test@example.com"),
-            oauth_provider=OAuthProvider(value="google"),
-            oauth_user_id="google_user_123",
-        )
-        await _user_repository.save(user)
+        user = await self._create_and_save_user()
 
         # アクセストークンを生成
         access_token = _token_manager.create_access_token(

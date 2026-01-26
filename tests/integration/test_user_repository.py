@@ -111,7 +111,7 @@ async def test_OAuthプロバイダーとユーザーIDでユーザーを検索�
     await repository.save(user)
 
     # When
-    result = await repository.find_by_oauth("google", "google_789")
+    result = await repository.find_by_oauth(OAuthProvider(value="google"), "google_789")
 
     # Then
     assert result.is_ok()

@@ -4,21 +4,13 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from apps.api.main import app
 from domain.user.models import User, Email, OAuthProvider
-from apps.api.dependencies import (
-    _user_repository,
-    _milestone_repository,
-    _token_manager,
-)
+from apps.api.dependencies import _token_manager
+from infrastructure.shared.database import get_session_maker
+from infrastructure.user.persistence.repository import PostgresUserRepository
 
 
 class TestMilestoneAPI:
     """Milestone APIの統合テスト"""
-
-    def setup_method(self):
-        """各テストメソッドの前に実行"""
-        # リポジトリをクリア
-        _user_repository._users.clear()
-        _milestone_repository._milestones.clear()
 
     async def _create_authenticated_user(self):
         """認証済みユーザーを作成してトークンを返す"""
@@ -27,7 +19,12 @@ class TestMilestoneAPI:
             oauth_provider=OAuthProvider(value="google"),
             oauth_user_id="google_user_123",
         )
-        await _user_repository.save(user)
+
+        # セッションとリポジトリを取得してユーザーを保存
+        session_maker = get_session_maker()
+        async with session_maker() as session:
+            repository = PostgresUserRepository(session)
+            await repository.save(user)
 
         access_token = _token_manager.create_access_token(
             str(user.id.value), user.email.value
@@ -91,7 +88,7 @@ class TestMilestoneAPI:
     @pytest.mark.anyio
     async def test_認証済みユーザーはマイルストーン一覧を取得できること(self):
         """GET /api/v1/milestonesで認証済みユーザーはマイルストーン一覧を取得できること"""
-        user, access_token = await self._create_authenticated_user()
+        _, access_token = await self._create_authenticated_user()
 
         # マイルストーンを作成
         milestone_data = {
@@ -139,7 +136,7 @@ class TestMilestoneAPI:
     @pytest.mark.anyio
     async def test_認証済みユーザーはマイルストーンを更新できること(self):
         """PUT /api/v1/milestones/{milestone_id}で認証済みユーザーはマイルストーンを更新できること"""
-        user, access_token = await self._create_authenticated_user()
+        _, access_token = await self._create_authenticated_user()
 
         # マイルストーンを作成
         milestone_data = {
@@ -180,7 +177,7 @@ class TestMilestoneAPI:
     @pytest.mark.anyio
     async def test_認証済みユーザーはマイルストーンを削除できること(self):
         """DELETE /api/v1/milestones/{milestone_id}で認証済みユーザーはマイルストーンを削除できること"""
-        user, access_token = await self._create_authenticated_user()
+        _, access_token = await self._create_authenticated_user()
 
         # マイルストーンを作成
         milestone_data = {
