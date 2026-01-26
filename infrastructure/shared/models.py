@@ -160,3 +160,48 @@ class SensorDataModel(Base):
     )
 
     verification = relationship("VerificationModel", back_populates="sensor_data")
+
+
+class AchievementRecordModel(Base):
+    """Achievement Record ORM model"""
+
+    __tablename__ = "achievement_records"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    milestone_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("milestones.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # AchievementStatus (3 columns)
+    status_achieved = Column(Boolean, nullable=False)
+    status_score = Column(Float, nullable=False)
+    status_reason = Column(String, nullable=False, default="")
+
+    # Evidence (3 columns)
+    evidence_type = Column(String, nullable=False)
+    evidence_references = Column(JSON, nullable=False, default=list)
+    evidence_metadata = Column(JSON, nullable=False, default=dict)
+
+    recorded_at = Column(DateTime(timezone=True), nullable=False)
+
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    milestone = relationship("MilestoneModel")
+    user = relationship("UserModel")
