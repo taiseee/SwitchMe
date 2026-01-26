@@ -6,6 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from domain.user.models import User
 from infrastructure.user.persistence.repository import PostgresUserRepository
 from infrastructure.milestone.persistence.repository import PostgresMilestoneRepository
+from infrastructure.verification.persistence.repository import (
+    PostgresVerificationRepository,
+)
+from infrastructure.achievement.persistence.repository import (
+    PostgresAchievementRepository,
+)
 from infrastructure.shared.database import get_session
 from infrastructure.auth.adapters.oauth_client import MockGoogleOAuthClient
 from infrastructure.auth.adapters.token_manager import JWTTokenManager
@@ -37,6 +43,20 @@ async def get_milestone_repository(
 ) -> PostgresMilestoneRepository:
     """マイルストーンリポジトリを取得"""
     return PostgresMilestoneRepository(session)
+
+
+async def get_verification_repository(
+    session: AsyncSession = Depends(get_session),
+) -> PostgresVerificationRepository:
+    """検証リポジトリを取得"""
+    return PostgresVerificationRepository(session)
+
+
+async def get_achievement_repository(
+    session: AsyncSession = Depends(get_session),
+) -> PostgresAchievementRepository:
+    """達成記録リポジトリを取得"""
+    return PostgresAchievementRepository(session)
 
 
 def get_oauth_client():

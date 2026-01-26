@@ -1,7 +1,7 @@
 """FastAPIアプリケーションのエントリーポイント"""
 
 from fastapi import FastAPI
-from apps.api.routers import auth_router, milestone_router
+from apps.api.routers import auth_router, milestone_router, verification_router
 
 app = FastAPI(
     title="SwithMe API",
@@ -20,3 +20,4 @@ async def health_check():
 # ルーターの登録
 app.include_router(auth_router.router, prefix="/api/v1")
 app.include_router(milestone_router.router, prefix="/api/v1")
+app.include_router(verification_router.router, prefix="/api/v1")
