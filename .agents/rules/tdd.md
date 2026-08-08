@@ -1,8 +1,3 @@
----
-description: tdd rules
-globs: 
-alwaysApply: false
----
 # テスト駆動開発 (TDD) の基本
 
 ## 基本概念

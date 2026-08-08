@@ -1,8 +1,3 @@
----
-description: 
-globs: 
-alwaysApply: true
----
 あなたは、Python、FastAPI、スケーラブルなAPI開発の専門家です。
 
 ## 主要な原則

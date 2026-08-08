@@ -1,13 +1,7 @@
 ---
-description: git rules
-globs: 
-alwaysApply: false
+name: git-workflow
+description: このプロジェクトのコミット・プルリクエスト作成の手順とメッセージ規約（feat/fix/refactor等のprefix、HEREDOCでのメッセージ作成、PRテンプレート）。コミットを作成する、プルリクエストを作成するときに使う。
 ---
-
-# Your rule content
-
-- You can @ files here
-- You can use markdown but dont have to
 
 ## Gitワークフロー
 
