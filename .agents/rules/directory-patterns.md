@@ -10,11 +10,11 @@ docs/
   plans/          # 実装プラン（plan-management スキルの規則に従う）
 ```
 
-### docs/design の正
+### docs/design には ui.pen 以外を置かない
 
-- `ui.pen` … **確定UI。仕様の正。**
-- `ui-legacy.pen` `ui-selection.pen` `duolingo-*.pen` … 過去の検討。参照しない
-- `*.md` … 設計判断の記録。`ui.pen` と矛盾する場合は `ui.pen` を優先する
+- `ui.pen` … **確定UI。仕様の正。** フレーム名と NOTE が一次情報
+- 旧 UI や UI 作成時の指示書・提案・修正記録は置かない。現行 UI と食い違って認識を誤らせるため
+- UI から導いた要件と確定した判断は `docs/prd/` に書く
 
 ### 実装コード
 
