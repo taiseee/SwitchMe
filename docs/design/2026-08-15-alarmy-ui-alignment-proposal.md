@@ -1,7 +1,7 @@
-# ui-alarmy.pen を参照UI（Alarmy/SuperAlarm）に寄せるための変更案
+# ui.pen を参照UI（Alarmy/SuperAlarm）に寄せるための変更案
 
 作成日: 2026-08-15
-対象ファイル: `docs/design/ui-alarmy.pen`
+対象ファイル: `docs/design/ui.pen`
 参照: Alarmy(SuperAlarm) スクリーンショット4枚（睡眠 / アラーム編集 / アラーム一覧 / 分析）
 
 ## レビュー範囲と前提

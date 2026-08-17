@@ -1,7 +1,11 @@
 # SwitchMe UI 追加画面 指示書
 
+> **注記（2026-08-17）**: 本書は旧 UI（現 `docs/design/ui-legacy.pen`）への指示書であり、
+> 現行 UI の `docs/design/ui.pen`（旧 `ui-alarmy.pen`）とは画面番号・検証手段が一部異なる。
+> 現行の正は `ui.pen` のフレーム名。本書は経緯を残すための歴史的資料として保持している。
+
 作成日: 2026-08-10
-対象ファイル: `docs/design/ui.pen`
+対象ファイル: `docs/design/ui-legacy.pen`
 前提: 既存34フレーム（コンポーネント9＋画面25）に対する追加分の指示。
 
 ---
